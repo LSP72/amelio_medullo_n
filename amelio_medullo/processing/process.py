@@ -195,3 +195,23 @@ class ProcessPatients:
         if missings:
             print(f"Patients {missings} \nnot in post_evaluation.")
         return missings
+
+    @staticmethod
+    def collect_patients_for_chosen_intervention(dict_patients: dict, intervention: str) -> pd.Series:
+        """Function that collects the patients for a choosen intervention.
+
+        Parameters
+        ----------
+        dict_patients : dict
+            Dictionary containing the patients per sheet.
+        intervention : str
+            Name of the intervention.
+
+        Returns
+        -------
+        list
+            List of patients that are in the choosen intervention.
+        """
+        main_patients = dict_patients['bilan_init_birdlm']  # main list of patients
+        intervention_patients = main_patients[main_patients[intervention] == "Oui"]["IEP"]
+        return intervention_patients
