@@ -167,7 +167,51 @@ class ProcessPatients:
             return all_evaluations_valid
 
     @staticmethod
-    def check_patients_in_pre_and_post_evaluations(pre_eval: pd.DataFrame, post_eval: pd.DataFrame) -> list:
+    def collect_patients_for_chosen_intervention(data: dict, intervention: str) -> pd.Series:
+        """Function that collects the patients for a choosen intervention.
+
+        Parameters
+        ----------
+        data : dict
+            Dictionary containing the patients per sheet.
+        intervention : str
+            Name of the intervention.
+
+        Returns
+        -------
+        pd.Series
+            Series of patients that are in the choosen intervention.
+        """
+        main_patients = data["bilan_init_birdlm"]  # main list of patients
+        intervention_patients = main_patients[main_patients[intervention] == "Oui"]["IEP"]
+        #TODO: check if need to remove doubles in intervention_patients
+        # intervention_patients_set = set(intervention_patients)  # remove doubles in the intervention list
+        return intervention_patients
+    
+    @staticmethod
+    def select_patients(data: dict, patients: pd.Series) -> dict:
+        """Function that selects the patients in the data.
+
+        Parameters
+        ----------
+        data : dict
+            Dictionary containing the patients per sheet.
+        patients : pd.Series
+            Series of patients' ID to select.
+            FROM: the collect_patients_for_chosen_intervention function (need to run before).
+
+        Returns
+        -------
+        dict
+            Dictionary containing the selected patients per sheet.
+        """
+        selected_data = {}
+        for name, df in data.items():
+            selected_data[name] = df[df["IEP"].isin(patients)]
+        return selected_data
+
+    @staticmethod
+    def check_patients_in_pre_and_post_evaluations(pre_eval: pd.Series, post_eval: pd.Series) -> list:
         """Function that checks if patients in pre-evaluation are in post-evaluation.
 
         Parameters
@@ -195,23 +239,3 @@ class ProcessPatients:
         if missings:
             print(f"Patients {missings} \nnot in post_evaluation.")
         return missings
-
-    @staticmethod
-    def collect_patients_for_chosen_intervention(dict_patients: dict, intervention: str) -> pd.Series:
-        """Function that collects the patients for a choosen intervention.
-
-        Parameters
-        ----------
-        dict_patients : dict
-            Dictionary containing the patients per sheet.
-        intervention : str
-            Name of the intervention.
-
-        Returns
-        -------
-        list
-            List of patients that are in the choosen intervention.
-        """
-        main_patients = dict_patients['bilan_init_birdlm']  # main list of patients
-        intervention_patients = main_patients[main_patients[intervention] == "Oui"]["IEP"]
-        return intervention_patients
