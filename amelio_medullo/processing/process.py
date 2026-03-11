@@ -207,7 +207,7 @@ class ProcessPatients:
         """
         selected_data = {}
         for name, df in data.items():
-            selected_data[name] = df[df["IEP"].isin(patients)]
+            selected_data[name] = df.loc[df.index.isin(patients.index)]
         return selected_data
 
     @staticmethod
