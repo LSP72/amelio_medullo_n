@@ -167,7 +167,7 @@ class ProcessPatients:
             return all_evaluations_valid
 
     @staticmethod
-    def collect_patients_for_chosen_intervention(data: dict, intervention: str) -> pd.Series:
+    def collect_patients_for_chosen_intervention(data: dict, main_info: str, intervention: str) -> pd.Series:
         """Function that collects the patients for a choosen intervention.
 
         Parameters
@@ -182,12 +182,12 @@ class ProcessPatients:
         pd.Series
             Series of patients that are in the choosen intervention.
         """
-        main_patients = data["bilan_init_birdlm"]  # main list of patients
+        main_patients = data[main_info]  # main list of patients
         intervention_patients = main_patients[main_patients[intervention] == "Oui"]["IEP"]
-        #TODO: check if need to remove doubles in intervention_patients
+        # TODO: check if need to remove doubles in intervention_patients
         # intervention_patients_set = set(intervention_patients)  # remove doubles in the intervention list
         return intervention_patients
-    
+
     @staticmethod
     def select_patients(data: dict, patients: pd.Series) -> dict:
         """Function that selects the patients in the data.
