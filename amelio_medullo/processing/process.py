@@ -77,7 +77,7 @@ class ProcessPatients:
         return dict_patients
 
     @staticmethod
-    def check_patients(dict_patients: dict, eval1: str , eval2: str ) -> list:
+    def check_patients(dict_patients: dict, eval1: str, eval2: str) -> list:
         """Function to check if patients of eval1 are in the eval2.
 
         Parameters
@@ -85,7 +85,7 @@ class ProcessPatients:
         dict_patients : dict
             Dictionary containing the patients in each sheet.
         eval1 : str
-            Name of the sheet of the first evaluation. 
+            Name of the sheet of the first evaluation.
         eval2 : str
             Name of the sheet of the second evaluation.
 
