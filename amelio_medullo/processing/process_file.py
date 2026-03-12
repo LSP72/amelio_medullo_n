@@ -210,7 +210,7 @@ class ProcessPatients:
         selected_data = {}
         for name, df in data.items():
             selected_data[name] = df.loc[
-                df.index.isin(patients.index)
+                df['IEP'].isin(patients)
             ]  # based on the index of the patients, as might be double IEP.
         return selected_data
 

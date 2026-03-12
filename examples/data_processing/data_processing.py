@@ -16,7 +16,7 @@ def collect_data(data, first_sheet, intervention):
         list_patients_intervention = ProcessPatients.collect_patients_for_chosen_intervention(
             data=data, main_info=first_sheet, intervention=intervention
         )
-        print(f"{intervention} patients: {sorted(list_patients_intervention.to_list())}\n")
+        print(f"{intervention} patients ({len(list_patients_intervention.to_list())}): {sorted(list_patients_intervention.to_list())}\n")
         selected_data = ProcessPatients.select_patients(data=data, patients=list_patients_intervention)
         return selected_data
     else:
@@ -29,7 +29,7 @@ def create_csv(data, lists_cols, output_path):
     data_for_csv = ProcessData.collect_desired_col_all_sheets(data=data, lists_col=lists_cols)
     print(f"Data looks like: {data_for_csv.head()}")
     file_output_path = output_path + first_sheet[: len(first_sheet) - 7] + ".csv"
-    # data_for_csv.to_csv(file_output_path)
+    data_for_csv.to_csv(file_output_path)
     print(f"Data saved: {file_output_path}")
     return data_for_csv
 
