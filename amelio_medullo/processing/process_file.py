@@ -55,6 +55,27 @@ class ProcessExcel:
             print(f"Error reading Excel sheet: {e}")
             return None
 
+    def translate_date(data: dict) -> dict:
+        """Function to translate the date from the excel to a comprehnsible date object in Python
+           This will allow to remove some rows based on the date, if needed.
+
+        Parameters
+        ----------
+        data : dict
+            Dictionary containing the data, separated by sheets of the excel file.
+
+        Returns
+        -------
+        dict
+            Same dictionnary, but with the translated date column added.
+        """
+        for name, df in data.items():
+            if "Date_Formulaire" in df.columns:
+                df["translated_date"] = pd.to_datetime(df["Date_Formulaire"], format="%d%b%Y:%H:%M:%S")
+
+        print("Dates have been translated to be interpreted by the algorithm.")
+        return data
+
 
 class ProcessPatients:
     def __init__(self):
@@ -210,7 +231,7 @@ class ProcessPatients:
         selected_data = {}
         for name, df in data.items():
             selected_data[name] = df.loc[
-                df['IEP'].isin(patients)
+                df["IEP"].isin(patients)
             ]  # based on the index of the patients, as might be double IEP.
         return selected_data
 
