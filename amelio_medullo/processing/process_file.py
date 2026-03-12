@@ -192,7 +192,7 @@ class ProcessPatients:
 
     @staticmethod
     def select_patients(data: dict, patients: pd.Series) -> dict:
-        """Function that selects the patients in the data.
+        """Function that selects the data of the corresponding patients.
 
         Parameters
         ----------
