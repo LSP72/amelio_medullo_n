@@ -6,7 +6,7 @@ class ProcessData:
         pass
 
     @staticmethod
-    def collect_desired_col(df: pd.DataFrame, list_col: list) -> pd.DataFrame:
+    def _collect_desired_col(df: pd.DataFrame, list_col: list) -> pd.DataFrame:
         """Function to collect the desired columns of the data from one sheet.
 
         Parameters
@@ -48,7 +48,7 @@ class ProcessData:
         data_revised = None
         for name, lists in lists_col.items():
             print("Processing sheet:", name)
-            df_revised = ProcessData.collect_desired_col(data[name], lists)
+            df_revised = ProcessData._collect_desired_col(data[name], lists)
             if data_revised is None:
                 data_revised = df_revised.copy()
             else:

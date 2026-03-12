@@ -23,6 +23,7 @@ share/python-wheels/
 # Others
 *.DS_Store
 *.toml
+*.csv
 
 # Jupyter Notebook
 *.ipynb
