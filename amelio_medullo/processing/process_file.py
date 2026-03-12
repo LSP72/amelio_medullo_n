@@ -29,7 +29,7 @@ class ProcessExcel:
             return None
 
     @staticmethod
-    def read_excel_sheets(data: dict) -> dict:
+    def read_excel_sheets(data: dict, show:str = True) -> dict:
         """fonction to read the title of all excel sheets.
 
         Parameters
@@ -42,11 +42,14 @@ class ProcessExcel:
         dict
             Dictionary containing the titles of the sheets.
         """
+        sheets_col = {}
         try:
             for name, df in data.items():
-                print("Sheet:", name)
-                print(df.columns)
-            return data.items()
+                sheets_col[name] = df.columns
+                if show == True:
+                    print("Sheet:", name)
+                    print(df.columns)
+            return sheets_col
 
         except Exception as e:
             print(f"Error reading Excel sheet: {e}")
@@ -109,8 +112,7 @@ class ProcessPatients:
             print(f"Patients in common between {eval1} and {eval2}: {common}")
             return list(common)
         else:
-            print(f"No common patients between {eval1} and {eval2}.")
-            return []
+            raise ValueError(f"No common patients between {eval1} and {eval2}.")
 
     @staticmethod
     def check_patients_all_sheets(dict_patients: dict) -> list:
@@ -127,7 +129,7 @@ class ProcessPatients:
             List of patients that are in all sheets.
         """
         lists = list(dict_patients.values())
-        common_patients = set(lists[0])  # remove doubles in the first list
+        common_patients = set(lists[0])  # remove doubles in the first (i.e., main) list
 
         for patients in lists[1:]:
             common_patients &= set(patients)
@@ -136,7 +138,7 @@ class ProcessPatients:
 
     @staticmethod
     def check_patients_in_main_list(dict_patients: dict, main_list: str) -> bool:
-        """_summary_
+        """Function to check if the patient in the sublists are indeed in the first (main) list.
 
         Parameters
         ----------
