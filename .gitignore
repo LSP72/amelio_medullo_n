@@ -24,6 +24,7 @@ share/python-wheels/
 *.DS_Store
 *.toml
 *.csv
+*.xlsx
 
 # Jupyter Notebook
 *.ipynb

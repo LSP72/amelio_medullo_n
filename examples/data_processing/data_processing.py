@@ -16,12 +16,14 @@ def collect_data(data, first_sheet, intervention):
         list_patients_intervention = ProcessPatients.collect_patients_for_chosen_intervention(
             data=data, main_info=first_sheet, intervention=intervention
         )
-        print(f"{intervention} patients ({len(list_patients_intervention.to_list())}): {sorted(list_patients_intervention.to_list())}\n")
+        print(
+            f"{intervention} patients ({len(list_patients_intervention.to_list())}): {sorted(list_patients_intervention.to_list())}\n"
+        )
         selected_data = ProcessPatients.select_patients(data=data, patients=list_patients_intervention)
         return selected_data
     else:
         raise ValueError(
-            "/!\ Some patients in the sub-sheets are not in the main sheet.\nThus no demographic data are available."
+            "Some patients in the sub-sheets are not in the main sheet.\nThus no demographic data are available."
         )
 
 
@@ -42,7 +44,7 @@ def main(file_path, first_sheet, intervention, desired_lists_cols, output_path):
 
 if __name__ == "__main__":
     # file_path = input("Enter the path to the file: ")
-    file_path = "/Volumes/HP Fab USBKey/Data-recuperation-CliniqueDesDonnees/bilan_init_20260121 PEC opposés.xlsx"
+    file_path = "/Users/mathildetardif/Documents/Python/Biomarkers/amelio_medullo_n/datasets/bilan_init_20260121 PEC opposés_perso.xlsx"
     print(f"Processing file: {file_path}")
     # output_path = input("Enter the path to the output folder: ")
     output_path = "/Users/mathildetardif/Documents/Python/Biomarkers/amelio_medullo_n/datasets/"
