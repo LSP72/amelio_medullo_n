@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+
 class ProcessData:
     def __init__(self):
         pass
@@ -28,7 +29,7 @@ class ProcessData:
         except Exception as e:
             print(f"Error collecting desired columns: {e}")
             return None
-        
+
     @staticmethod
     def collect_desired_col_all_sheets(data: dict, lists_col: dict) -> dict:
         """Function to collect the desired columns of the data from all sheets.

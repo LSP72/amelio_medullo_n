@@ -14,11 +14,22 @@ if __name__ == "__main__":
     file_path = "/Volumes/HP Fab USBKey/Data-recuperation-CliniqueDesDonnees/bilan_init_20260121 PEC opposés.xlsx"
     print(f"Processing file: {file_path}")
     lists_cols = {
-    "bilan_init_birdlm": ['IEP', 'Date_Formulaire', 'Poids_dosage',
-        'Taille_dosage', 'Contre_Indications', 'Cerebrolese',
-        'BlesseMedullaire',],
-    "bilan_init_6m": ['IEP', 'Age', 'Distance_parcourue',
-        'Distance_theorique', 'Distance_theorique_lim_inf',
-        'Distance_parcourue_tp']
+        "bilan_init_birdlm": [
+            "IEP",
+            "Date_Formulaire",
+            "Poids_dosage",
+            "Taille_dosage",
+            "Contre_Indications",
+            "Cerebrolese",
+            "BlesseMedullaire",
+        ],
+        "bilan_init_6m": [
+            "IEP",
+            "Age",
+            "Distance_parcourue",
+            "Distance_theorique",
+            "Distance_theorique_lim_inf",
+            "Distance_parcourue_tp",
+        ],
     }
     main(file_path, lists_cols)
