@@ -53,6 +53,6 @@ class ProcessData:
             if data_revised is None:
                 data_revised = df_revised.copy()
             else:
-                data_revised = data_revised.merge(df_revised, on="IEP", how="outer")
+                data_revised = data_revised.merge(df_revised, on="IPP", how="outer")
 
         return data_revised

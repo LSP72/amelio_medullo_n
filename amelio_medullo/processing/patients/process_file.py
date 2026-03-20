@@ -97,7 +97,7 @@ class ProcessPatients:
         """
         dict_patients = {}
         for name, df in data.items():
-            dict_patients[name] = df["IEP"].tolist()
+            dict_patients[name] = df["IPP"].tolist()
         return dict_patients
 
     @staticmethod
@@ -206,10 +206,16 @@ class ProcessPatients:
             Series of patients that are in the choosen intervention.
         """
         main_patients = data[main_info]  # main list of patients
-        intervention_patients = main_patients[main_patients[intervention] == "Oui"]["IEP"]
-        # TODO: check if need to remove doubles in intervention_patients
-        # intervention_patients_set = set(intervention_patients)  # remove doubles in the intervention list
-        return intervention_patients
+        if intervention in main_patients.columns.to_list():
+            # check if there's the column specifying the intervention used
+            # if None, it is assumed that the .xlsx was already only for the intervention used
+            intervention_patients = main_patients[main_patients[intervention] == "Oui"]["IPP"]
+            # TODO: check if need to remove doubles in intervention_patients
+            # intervention_patients_set = set(intervention_patients)  # remove doubles in the intervention list
+            return intervention_patients
+        else:
+            print(f"No {intervention} column found; it is assumed that the excel was already the data of the {intervention}.")
+            return main_patients["IPP"]
 
     @staticmethod
     def select_patients(data: dict, patients: pd.Series) -> dict:
@@ -231,8 +237,8 @@ class ProcessPatients:
         selected_data = {}
         for name, df in data.items():
             selected_data[name] = df.loc[
-                df["IEP"].isin(patients)
-            ]  # based on the index of the patients, as might be double IEP.
+                df["IPP"].isin(patients)
+            ]  # based on the index of the patients, as might be double IPP.
         return selected_data
 
     @staticmethod
@@ -260,7 +266,7 @@ class ProcessPatients:
 
         # TODO: check if need to remove doubles in post_eval
         # post_eval_set = set(post_eval_np)
-        missings = [a for a in pre_eval_np if a not in post_eval_np]
+        missings = [a for a in pre_eval_np[:,1] if a not in post_eval_np[:,1]]
         if missings:
-            print(f"Patients {missings} \nnot in post_evaluation.")
+            print(f"{len(missings)} patients from pre_evaluation are not in post_evaluation:\n {missings}")
         return missings
