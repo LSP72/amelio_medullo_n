@@ -214,7 +214,9 @@ class ProcessPatients:
             # intervention_patients_set = set(intervention_patients)  # remove doubles in the intervention list
             return intervention_patients
         else:
-            print(f"No {intervention} column found; it is assumed that the excel was already the data of the {intervention}.")
+            print(
+                f"No {intervention} column found; it is assumed that the excel was already the data of the {intervention}."
+            )
             return main_patients["IPP"]
 
     @staticmethod
@@ -266,7 +268,7 @@ class ProcessPatients:
 
         # TODO: check if need to remove doubles in post_eval
         # post_eval_set = set(post_eval_np)
-        missings = [a for a in pre_eval_np[:,1] if a not in post_eval_np[:,1]]
+        missings = [a for a in pre_eval_np[:, 1] if a not in post_eval_np[:, 1]]
         if missings:
             print(f"{len(missings)} patients from pre_evaluation are not in post_evaluation:\n {missings}")
         return missings

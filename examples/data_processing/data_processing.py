@@ -50,7 +50,7 @@ if __name__ == "__main__":
     if status == "init":
         file_path = input("Enter the path to the file: ")
         print(f"Processing file: {file_path}")
-        first_sheet = "bilan_init_birdlm" # bilan init
+        first_sheet = "bilan_init_birdlm"  # bilan init
         desired_lists_cols = {
             "bilan_init_birdlm": [
                 "IEP",
@@ -75,7 +75,7 @@ if __name__ == "__main__":
                 "IPP",
                 "Score_total",
             ],
-            "bilan_init_tuagt": [
+            "bilan_init_tuagt": ["IPP", "Temps_1"],
                 "IPP",
                 "Temps_1"
             ]
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     elif status == "final":
         file_path = input("Enter the path to the file: ")
         print(f"Processing file: {file_path}")
-        first_sheet = "bilan_final_bfrdlm" # bilan final
+        first_sheet = "bilan_final_bfrdlm"  # bilan final
         desired_lists_cols = {
             "bilan_final_birdlm": [
                 "IEP",
@@ -108,7 +108,7 @@ if __name__ == "__main__":
                 "IPP",
                 "score_total",
             ],
-            "bilan_final_tuagt": [
+            "bilan_final_tuagt": ["IPP", "Temps_1"],
                 "IPP",
                 "Temps_1"
             ]

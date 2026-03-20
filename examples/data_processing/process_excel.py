@@ -10,7 +10,7 @@ def main(file_path, lists_cols):
 
 
 if __name__ == "__main__":
-    file_path = input ("Enter the path to the file: ")
+    file_path = input("Enter the path to the file: ")
     
     print(f"Processing file: {file_path}")
     lists_cols = {

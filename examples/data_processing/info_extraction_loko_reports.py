@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import filedialog
 from amelio_medullo import ProcessDataLokomat
 
+
 def main():
     root = tk.Tk()
     root.withdraw()  # Hide the main window
@@ -16,6 +17,7 @@ def main():
     name_output_file = input("\nEnter the name of the output file: ")
 
     ProcessDataLokomat.read_data_info(folder_path, name_output_file)
+
 
 if __name__ == "__main__":
     main()
