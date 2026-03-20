@@ -43,32 +43,76 @@ def main(file_path, first_sheet, intervention, desired_lists_cols, output_path):
 
 
 if __name__ == "__main__":
-    # file_path = input("Enter the path to the file: ")
-    file_path = "/Users/mathildetardif/Documents/Python/Biomarkers/amelio_medullo_n/datasets/bilan_init_20260121 PEC opposés_perso.xlsx"
-    print(f"Processing file: {file_path}")
-    # output_path = input("Enter the path to the output folder: ")
-    output_path = "/Users/mathildetardif/Documents/Python/Biomarkers/amelio_medullo_n/datasets/"
-    first_sheet = "bilan_init_birdlm"
+    
+    output_path = input("Enter the path to the output folder: ")
     intervention = "LOKOMAT"  # /!\ CAPITAL LETTERS
-    desired_lists_cols = {
-        "bilan_init_birdlm": [
-            "IEP",
-            "IPP",
-            "Date_Formulaire",
-            "Poids_dosage",
-            "Taille_dosage",
-            "Contre_Indications",
-            "Cerebrolese",
-            "BlesseMedullaire",
-        ],
-        "bilan_init_6m": [
-            "IEP",
-            "IPP",
-            "Age",
-            "Distance_parcourue",
-            "Distance_theorique",
-            "Distance_theorique_lim_inf",
-            "Distance_parcourue_tp",
-        ],
-    }
+    status = input("Which dataset? init or final: ")
+    if status == "init":
+        file_path = input("Enter the path to the file: ")
+        print(f"Processing file: {file_path}")
+        first_sheet = "bilan_init_birdlm" # bilan init
+        desired_lists_cols = {
+            "bilan_init_birdlm": [
+                "IEP",
+                "IPP",
+                "Date_Formulaire",
+                "Poids_dosage",
+                "Taille_dosage",
+                "Cerebrolese",
+                "BlesseMedullaire",
+            ],
+            "bilan_init_6m": [
+                "IPP",
+                "Age",
+                "Distance_parcourue",
+            ],
+            "bilan_init_10m": [
+                "IPP",
+                "Nombre_de_pas",
+                "Temps",
+            ],
+            "bilan_init_berg": [
+                "IPP",
+                "Score_total",
+            ],
+            "bilan_init_tuagt": [
+                "IPP",
+                "Temps_1"
+            ]
+        }
+    elif status == "final":
+        file_path = input("Enter the path to the file: ")
+        print(f"Processing file: {file_path}")
+        first_sheet = "bilan_final_bfrdlm" # bilan final
+        desired_lists_cols = {
+            "bilan_final_birdlm": [
+                "IEP",
+                "IPP",
+                "Date_Formulaire",
+                "Poids_dosage",
+                "Taille_dosage",
+                "Cerebrolese",
+                "BlesseMedullaire",
+            ],
+            "bilan_final_6m": [
+                "IPP",
+                "Age",
+                "Distance_parcourue",
+            ],
+            "bilan_final_10m": [
+                "IPP",
+                "Nombre_de_pas",
+                "Temps",
+            ],
+            "bilan_final_berg": [
+                "IPP",
+                "score_total",
+            ],
+            "bilan_final_tuagt": [
+                "IPP",
+                "Temps_1"
+            ]
+        }
+    else:
+        print("Choose 'init' or 'final'.")
     main(file_path, first_sheet, intervention, desired_lists_cols, output_path)
