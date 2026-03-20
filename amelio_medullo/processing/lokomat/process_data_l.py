@@ -39,9 +39,38 @@ class ProcessDataLokomat:
         df = pd.DataFrame(results)
 
         # Save to CSV
-        output_path = os.path.join(folder_path, name_output_file, ".xlsx")
+        excel_name = name_output_file + ".xlsx"
+        output_path = os.path.join(folder_path, excel_name)
         df.to_excel(output_path, index=False)
 
         print(f"CSV saved at: {output_path}")
 
         return df
+    
+    def merge_same_day(file_path):
+        data = pd.read_excel(file_path)
+        data.drop(data.columns[33:], axis=1, inplace=True)
+
+        merged_data = data.groupby('Date').agg({
+            'Distance_m': 'sum',
+            'Distance_pas': 'sum',
+            'Durée_min': 'sum',
+            'Vitesse_kmh_MIN': 'min',
+            'Vitesse_kmh_MAX': 'max',
+            'Vitesse_kmh_MOY': 'mean',
+            'BWS_%_MIN': 'min',
+            'BWS_%_MAX': 'max',
+            'BWS_%_MOY': 'mean',
+            'BWS_kg_MIN': 'min',
+            'BWS_kg_MAX': 'max',
+            'BWS_kg_MOY': 'mean',
+            'Guidage_G_%_MIN': 'min',
+            'Guidage_G_%_MAX': 'max',
+            'Guidage_G_%_MOY': 'mean',
+            'Guidage_D_%_MIN': 'min',
+            'Guidage_D_%_MAX': 'max',
+            'Guidage_D_%_MOY': 'mean',
+        }).reset_index()
+
+        print(f"Rows with same dates have been merged.")
+        return merged_data
