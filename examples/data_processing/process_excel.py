@@ -10,8 +10,8 @@ def main(file_path, lists_cols):
 
 
 if __name__ == "__main__":
-    # file_path = input ("Enter the path to the file: ")
-    file_path = "/Volumes/HP Fab USBKey/Data-recuperation-CliniqueDesDonnees/bilan_init_20260121 PEC opposés.xlsx"
+    file_path = input ("Enter the path to the file: ")
+    
     print(f"Processing file: {file_path}")
     lists_cols = {
         "bilan_init_birdlm": [
@@ -22,14 +22,6 @@ if __name__ == "__main__":
             "Contre_Indications",
             "Cerebrolese",
             "BlesseMedullaire",
-        ],
-        "bilan_init_6m": [
-            "IEP",
-            "Age",
-            "Distance_parcourue",
-            "Distance_theorique",
-            "Distance_theorique_lim_inf",
-            "Distance_parcourue_tp",
         ],
     }
     main(file_path, lists_cols)
