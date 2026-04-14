@@ -15,7 +15,7 @@ def main():
     print("Selected folder:", folder_path)
 
     name_output_file = input("\nEnter the name of the output file: ")
-
+ 
     ProcessDataLokomat.read_data_info(folder_path, name_output_file)
 
 
