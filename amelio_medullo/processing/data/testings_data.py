@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+
 class MuscleScore:
     def __init__(self, value):
         pass
@@ -13,7 +14,7 @@ class MuscleScore:
         ----------
         val : int, float, or str
             The original muscle score value.
-        
+
         Returns
         -------
         float
@@ -22,22 +23,22 @@ class MuscleScore:
         # 1. Handle actual Pandas/Numpy NaNs
         if pd.isna(val):
             return np.nan
-        
+
         # 2. If already a clean number, returns it as a float
         if isinstance(val, (int, float)):
             return float(val)
-        
+
         # 3. Handle strings
         val = str(val).strip()
-        
+
         # 4. Catch string 'NaN'
-        if val.lower() == 'nan' or val == '':
+        if val.lower() == "nan" or val == "":
             return np.nan
-            
+
         # 5. Handle values with '+' or '-' signs
-        if val.endswith('+'):
+        if val.endswith("+"):
             return float(val[:-1]) + 0.25
-        elif val.endswith('-'):
+        elif val.endswith("-"):
             return float(val[:-1]) - 0.25
         else:
             # Catch if val formatted as strings (e.g., '2')
@@ -48,7 +49,7 @@ class MuscleScore:
 
     def convert_muscles_to_movements(df, mapping_dict):
         """Calculates the max score for movements based on collaborative muscles.
-        
+
         Parameters
         ----------
         df : pd.DataFrame
@@ -63,13 +64,13 @@ class MuscleScore:
         """
 
         df_clean = df.copy()
-        
+
         # New dataframe w/ only the final movement scores
         df_movements = pd.DataFrame(index=df.index)
-        
-        # Unique list of all muscles 
+
+        # Unique list of all muscles
         all_muscles = set(muscle for muscles in mapping_dict.values() for muscle in muscles)
-        
+
         # Apply the cleaning function only to the relevant muscle columns
         for col in all_muscles:
             if col in df_clean.columns:
@@ -79,16 +80,16 @@ class MuscleScore:
         for movement, muscles in mapping_dict.items():
             # Check if muscles are indeed in df_clean
             valid_muscles = [m for m in muscles if m in df_clean.columns]
-            
+
             if valid_muscles:
                 df_movements[movement] = df_clean[valid_muscles].max(axis=1)
             else:
                 # If none of the muscles for this movement exist in the df, return NaN
                 df_movements[movement] = np.nan
-                
+
         return df_movements
-    
-    #TODO: fix the suffix changing the name of the columns in the original df, if needed
+
+    # TODO: fix the suffix changing the name of the columns in the original df, if needed
     @staticmethod
     def transform_dict_to_side(mapping_dict, side):
         """
@@ -106,13 +107,13 @@ class MuscleScore:
         dict
             A new dictionary with only the muscles on the specified side.
         """
-        if side == 'right':
-            suffix = '_D_pre_pre'
-        elif side == 'left':
-            suffix = '_G_pre_pre'
+        if side == "right":
+            suffix = "_D_pre_pre"
+        elif side == "left":
+            suffix = "_G_pre_pre"
         else:
             raise ValueError("Side must be 'left' or 'right'")
-        
+
         transformed_dict = {}
         for movement, muscles in mapping_dict.items():
             transformed_dict[movement + suffix] = [muscle + suffix for muscle in muscles]

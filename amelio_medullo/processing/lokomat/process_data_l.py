@@ -39,7 +39,7 @@ class ProcessDataLokomat:
         print(f"CSV saved at: {output_path}")
 
         return df
-    
+
     def clean_data_columns(file_path):
         data = pd.read_excel(file_path, header=[0, 1])
         data.drop(data.columns[33:], axis=1, inplace=True)
@@ -60,20 +60,18 @@ class ProcessDataLokomat:
         if sub.startswith("Unnamed"):
             sub = ""
 
-        top = (top
-            .replace("Distance (mètres)", "Distance_m")
+        top = (
+            top.replace("Distance (mètres)", "Distance_m")
             .replace("Distance (pas)", "Distance_pas")
             .replace("Durée (minutes)", "Durée_min")
             .replace("Vitesse (km/h)", "Vitesse_kmh")
             .replace("Compens poids corps (%)", "BWS_%")
             .replace("Compens poids corps (kg)", "BWS_kg")
             .replace("Force de guidage gauche (%)", "Guidage_G_%")
-            .replace("Force de guidage droite (%)", "Guidage_D_%"))
+            .replace("Force de guidage droite (%)", "Guidage_D_%")
+        )
 
-        sub = (sub
-            .replace("max", "MAX")
-            .replace("moy", "MOY")
-            .replace("min", "MIN"))
+        sub = sub.replace("max", "MAX").replace("moy", "MOY").replace("min", "MIN")
 
         if top and sub:
             return f"{top}_{sub}"
@@ -82,7 +80,7 @@ class ProcessDataLokomat:
         else:
             return sub
 
-    def merge_same_day(data):        
+    def merge_same_day(data):
 
         merged_data = (
             data.groupby("Date")
