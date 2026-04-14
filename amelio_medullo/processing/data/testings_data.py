@@ -76,7 +76,7 @@ class MuscleScore:
         # Apply the cleaning function only to the relevant muscle columns
         for col in all_muscles:
             if col in df_clean.columns:
-                df_clean[col] = df_clean[col].apply(amelio_medullo.MuscleScore._clean_muscle_score)
+                df_clean[col] = df_clean[col].apply(MuscleScore._clean_muscle_score)
 
         # Find the max for each movement
         for movement, muscles in mapping_dict.items():
@@ -94,6 +94,8 @@ class MuscleScore:
         existing_movements = [col for col in df_movements.columns if col in df.columns]
 
         final_movement_df = df[existing_movements].combine_first(df_movements)
+
+        final_movement_df.insert(0, 'IPP', df['IPP'])  # Add the 'Patient' column back to the final dataframe
 
         return final_movement_df
 
