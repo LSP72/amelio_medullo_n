@@ -65,6 +65,8 @@ class MuscleScore:
 
         df_clean = df.copy()
 
+        ## STEP 1: Convert SCI's scores to match the AVC's ones.
+
         # New dataframe w/ only the final movement scores
         df_movements = pd.DataFrame(index=df.index)
 
@@ -74,7 +76,7 @@ class MuscleScore:
         # Apply the cleaning function only to the relevant muscle columns
         for col in all_muscles:
             if col in df_clean.columns:
-                df_clean[col] = df_clean[col].apply(MuscleScore._clean_muscle_score)
+                df_clean[col] = df_clean[col].apply(amelio_medullo.MuscleScore._clean_muscle_score)
 
         # Find the max for each movement
         for movement, muscles in mapping_dict.items():
@@ -87,7 +89,13 @@ class MuscleScore:
                 # If none of the muscles for this movement exist in the df, return NaN
                 df_movements[movement] = np.nan
 
-        return df_movements
+        ## STEP 2: Add the scores of the AVC patients.
+        # Checking the cols that are in the original df and in the new movement df.
+        existing_movements = [col for col in df_movements.columns if col in df.columns]
+
+        final_movement_df = df[existing_movements].combine_first(df_movements)
+
+        return final_movement_df
 
     # TODO: fix the suffix changing the name of the columns in the original df, if needed
     @staticmethod
