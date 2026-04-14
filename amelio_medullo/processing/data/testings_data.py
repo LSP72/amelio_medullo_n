@@ -95,7 +95,7 @@ class MuscleScore:
 
         final_movement_df = df[existing_movements].combine_first(df_movements)
 
-        final_movement_df.insert(0, 'IPP', df['IPP'])  # Add the 'Patient' column back to the final dataframe
+        final_movement_df.insert(0, "IPP", df["IPP"])  # Add the 'Patient' column back to the final dataframe
 
         return final_movement_df
 
