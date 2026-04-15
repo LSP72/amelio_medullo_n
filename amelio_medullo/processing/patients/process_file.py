@@ -1,10 +1,30 @@
 import pandas as pd
-import numpy as np
 
 
 class ProcessExcel:
     def __init__(self):
         pass
+
+    @staticmethod
+    def collect_excel_file_path():
+        """Function to collect the file path of the excel file.
+
+        Returns
+        -------
+        str
+            The file path of the excel file.
+        """
+        import tkinter as tk
+        from tkinter import filedialog
+
+        root = tk.Tk()
+        root.withdraw()  # Hide the main window
+
+        file_path = filedialog.askopenfilename(
+            title="Select a file", filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")]
+        )
+
+        return file_path
 
     @staticmethod
     def read_excel(file_path: str) -> dict:
