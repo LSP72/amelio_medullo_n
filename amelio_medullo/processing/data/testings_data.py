@@ -128,3 +128,4 @@ class MuscleScore:
         for movement, muscles in mapping_dict.items():
             transformed_dict[movement + suffix] = [muscle + suffix for muscle in muscles]
         return transformed_dict
+
