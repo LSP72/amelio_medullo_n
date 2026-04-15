@@ -9,6 +9,23 @@ class ProcessDataLokomat:
         pass
 
     def read_data_info(folder_path, name_output_file):
+        """This script generated an excel with:
+            - the nameof the report,
+            - the name of the patient
+            - and the date of the first Lokomat session.
+
+        Parameters
+        ----------
+        folder_path : str
+            The path to the folder containing the Excel files.
+        name_output_file : str
+            The name of the output file (without extension).
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing the extracted information.
+        """
 
         results = []
 
