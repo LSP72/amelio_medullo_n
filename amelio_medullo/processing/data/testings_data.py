@@ -129,3 +129,18 @@ class MuscleScore:
             transformed_dict[movement + suffix] = [muscle + suffix for muscle in muscles]
         return transformed_dict
 
+
+class Calculus:
+    def __init__(self, value):
+        pass
+
+    @staticmethod
+    def calculate_MCID(pre_data, post_data, threshold) -> list:
+        delta = post_data - pre_data
+        MCID = []
+        for i in delta:
+            if i >= threshold:
+                MCID.append(1)
+            else:
+                MCID.append(0)
+        return pd.Series(MCID, index=pre_data.index)
