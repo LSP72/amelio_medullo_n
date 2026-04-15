@@ -43,12 +43,13 @@ def main(file_path, first_sheet, intervention, desired_lists_cols, output_path):
 
 
 if __name__ == "__main__":
-    
-    output_path = input("Enter the path to the output folder: ")
+    # file_path = input("Enter the path to the file: ")
+    # output_path = input("Enter the path to the output folder: ")
+    output_path = "/Users/mathildetardif/Documents/Python/Biomarkers/amelio_medullo_n/datasets/"
     intervention = "LOKOMAT"  # /!\ CAPITAL LETTERS
     status = input("Which dataset? init or final: ")
     if status == "init":
-        file_path = input("Enter the path to the file: ")
+        file_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/bilan_init_20260121 PEC opposés.xlsx"
         print(f"Processing file: {file_path}")
         first_sheet = "bilan_init_birdlm"  # bilan init
         desired_lists_cols = {
@@ -76,12 +77,9 @@ if __name__ == "__main__":
                 "Score_total",
             ],
             "bilan_init_tuagt": ["IPP", "Temps_1"],
-                "IPP",
-                "Temps_1"
-            ]
         }
     elif status == "final":
-        file_path = input("Enter the path to the file: ")
+        file_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/bilan_final_20260121 PEC opposés.xlsx"
         print(f"Processing file: {file_path}")
         first_sheet = "bilan_final_bfrdlm"  # bilan final
         desired_lists_cols = {
@@ -109,9 +107,6 @@ if __name__ == "__main__":
                 "score_total",
             ],
             "bilan_final_tuagt": ["IPP", "Temps_1"],
-                "IPP",
-                "Temps_1"
-            ]
         }
     else:
         print("Choose 'init' or 'final'.")
