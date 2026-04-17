@@ -6,17 +6,18 @@ import tkinter as tk
 from tkinter import filedialog
 
 
-def combine_muscle_scores(df, mapping_dict, side):
+def combine_muscle_scores(df, mapping_dict, side, alternative_muscles_dict):
 
     side_dict = MuscleScore.transform_dict_to_side(mapping_dict, side)
     movement_scores = MuscleScore.convert_muscles_to_movements(df, side_dict)
+    movement_scores_updated = MuscleScore.check_if_muscle(movement_scores, alternative_muscles_dict)
 
-    return movement_scores
+    return movement_scores_updated
 
 
 def combine_both_sides(df, mapping_dict):
-    right_scores = combine_muscle_scores(df, mapping_dict, "right")
-    left_scores = combine_muscle_scores(df, mapping_dict, "left")
+    right_scores = combine_muscle_scores(df, mapping_dict, "right", alternative_movements)
+    left_scores = combine_muscle_scores(df, mapping_dict, "left", alternative_movements)
 
     combined_scores_df = right_scores.combine_first(left_scores)
     print(combined_scores_df.head())
@@ -55,5 +56,11 @@ if __name__ == "__main__":
         "A_Ever": ["Fibu_long"],
         "A_Inver": ["TP"],
     }
+
+    alternative_movements = {
+        "H_Flex_ass": ["H_Flex_GF"],
+        "A_Dorsiflex_GT": ["A_Dorsiflex_GF"],
+    }
+
 
     main(file_path, dict_mvt_BM)
