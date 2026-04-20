@@ -7,27 +7,6 @@ class DemographicData:
         pass
 
     @staticmethod
-    def clean_lesion_type(df, column_name):
-        """Cleans the 'Trouble neuro' column by categorizing lesion types.
-
-        Parameters
-        ----------
-        df : pd.DataFrame
-            The original dataframe containing the 'Trouble neuro' column.
-        column_name : str
-            The name of the column to clean (e.g., 'Trouble neuro').
-
-        Returns
-        -------
-        pd.DataFrame
-            The dataframe with the cleaned lesion types.
-        """
-
-        condition = ~df[column_name].isin(["BM", "AVC"])
-        df.loc[condition, column_name] = "Autre"
-        return df
-
-    @staticmethod
     def calculate_day_btwn_2_cols(df, col1, col2, new_col_name=None):
         """Calculates the number of days between two date columns.
 

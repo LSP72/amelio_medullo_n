@@ -25,6 +25,8 @@ share/python-wheels/
 *.toml
 *.csv
 *.xlsx
+*.png
+catboost_info/
 
 # Jupyter Notebook
 *.ipynb
