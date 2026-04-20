@@ -32,6 +32,7 @@ def collect_initial_file(keys: list, file_path: str = None):
     data = pd.read_excel(file_path)
 
     data_final = DataCleaning.select_patients_with_complete_data(data, keys)
+    data_final = DataCleaning.clean_lesion_type(data_final, "Trouble neuro")
 
     return data_final
 
@@ -55,12 +56,14 @@ def clean_data(df: pd.DataFrame):
     )
 
     # TODO: see if 10MWT_sec and 10MWT_sec are not redundant
-    df = DataCleaning.clean_string(df["6MWT_m_pre"])
-    df = DataCleaning.clean_string(df["6MWT_m_post"])
-    df = DataCleaning.clean_string(df["10MWT_pas_pre"])
-    df = DataCleaning.clean_string(df["10MWT_pas_post"])
-    df = DataCleaning.clean_string(df["10MWT_sec_pre"])
-    df = DataCleaning.clean_string(df["10MWT_sec_post"])
+    df["6MWT_m_pre"] = DataCleaning.clean_string(df["6MWT_m_pre"])
+    df["6MWT_m_post"] = DataCleaning.clean_string(df["6MWT_m_post"])
+    df["10MWT_pas_pre"] = DataCleaning.clean_string(df["10MWT_pas_pre"])
+    df["10MWT_pas_post"] = DataCleaning.clean_string(df["10MWT_pas_post"])
+    df["10MWT_sec_pre"] = DataCleaning.clean_string(df["10MWT_sec_pre"])
+    df["10MWT_sec_post"] = DataCleaning.clean_string(df["10MWT_sec_post"])
+
+    df.drop(columns=["tests"], inplace=True)
 
     print("Data has been cleaned from strings.")
 
@@ -86,14 +89,47 @@ def calculate_days(df: pd.DataFrame, dict_days: dict):
     """
     for key, dates in dict_days.items():
         df = DemographicData.calculate_day_btwn_2_cols(df, dates[0], dates[1], key)
-        df.drop(columns=dates, inplace=True)
+        df.drop(columns=dates[1], inplace=True)
 
+    df.drop(columns=dict_days[list(dict_days.keys())[0]][0], inplace=True)
     print("Delays have been calculated and date columns have been dropped.")
 
     return df
 
 
-def motricity_score(df, file_path_1=None, file_path_2=None):
+def add_muscular_scores(df: pd.DataFrame, muscular_scores_to_remove: list = None):
+    """Function that adds the muscular scores to the matrices.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Matrix in creation.
+    list_of_scores : list
+        List of muscular scores to remove.
+
+    Returns
+    -------
+    df : pd.DataFrame
+        Matrix with the muscular scores added.
+    """
+    # STEP 1: Clean the df from any muscular scores.
+    if muscular_scores_to_remove is not None:
+        for score in muscular_scores_to_remove:
+            if score in df.columns:
+                df.drop(columns=score, inplace=True)
+
+    # STEP 2: Add the muscular scores to the df.
+    file_path = ProcessExcel.collect_excel_file_path()
+    muscular_data = pd.read_excel(file_path)
+    df = df.merge(muscular_data, on="IPP", how="left")
+
+    print("Muscular scores have been added to the dataframe.")
+
+    return df
+
+
+# TODO: change the func once the SCI motricity will be collected.
+def motricity_score(df, file_path=None):
     """Function to calculate the motricity score.
 
     Parameters
@@ -110,50 +146,18 @@ def motricity_score(df, file_path_1=None, file_path_2=None):
     pd.DataFrame
         DataFrame containing the calculated motricity scores.
     """
-    if file_path_1 is None:
-        file_1 = collect_and_read_file()
-
-    if file_path_2 is None:
-        file_2 = collect_and_read_file()
-
-    # func that norm scores to match the same scale (i.e., 0-5)
-
-    df.merge(file_1, on="IPP", how="right")
-    df.merge(file_2, on="IPP", how="right")
-
-    print("Motricity scores have been normalised and merged with the original dataframe.")
-
-    def collect_and_read_file():
+    if file_path is None:
         file_path = ProcessExcel.collect_excel_file_path()
-        return pd.read_excel(file_path)
+    file = pd.read_excel(file_path)
+
+    df = DataCleaning.clean_motricity_scores(df, file)
+
+    print("Motricity scores have been added to the original dataframe.")
 
     return df
 
 
-def calculate_MCID(df: pd.DataFrame, test: dict):
-    """Function to calculate the MCID for a given test.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame containing the data to be cleaned.
-    test : str
-        Name of the test for which to calculate the MCID.
-
-    Returns
-    -------
-    pd.dataframe
-        df with the MCID column.
-    """
-    MCID = Calculus.calculate_MCID(df[test + "_m_pre"], df[test + "_m_post"], threshold=30)
-    df["MCID"] = MCID
-
-    print("MCID has been calculated and added to the dataframe.")
-
-    return df
-
-
-def clean_assessments(df: pd.DataFrame, cols: list):
+def clean_assessments(df: pd.DataFrame, joints_assessment_to_remove: list, other_cols_to_remove: list):
     """Function to clean the angular assessment data
         and remove all the 'post' columns.
 
@@ -169,25 +173,34 @@ def clean_assessments(df: pd.DataFrame, cols: list):
     pd.DataFrame
         DataFrame with the nonuse columns dropped.
     """
-    df.drop(columns=cols, inplace=True)
-    df.drop(columns=[col for col in df.columns if col.endswith("_post")], inplace=True)
+    df.drop(columns=joints_assessment_to_remove + other_cols_to_remove, inplace=True)
+    df.drop(columns=[col for col in df.columns if col.endswith("_post") and col!="6MWT_m_post"], inplace=True)
     print("Selected assessment columns and all 'post' columns have been dropped.")
 
     return df
 
 
-def main(keys: list, dict_days: dict, assessments_to_clean: list, test: str):
-    df = collect_initial_file(keys)
+def main(
+    keys: list,
+    dict_days: dict,
+    muscular_scores_to_remove: list,
+    joints_assessments_to_remove: list,
+    other_cols_to_remove: list,
+    test: str,
+    file_path: str = None,
+    output_dir: str = None,
+):
+    df = collect_initial_file(keys, file_path)
     df_cleaned = clean_data(df)
     df_with_delays = calculate_days(df_cleaned, dict_days)
-    df_with_motricity = motricity_score(df_with_delays)
-    df_with_MCID = calculate_MCID(df_with_motricity, test)
-    df_final = clean_assessments(df_with_MCID, assessments_to_clean)
+    df_with_muscular_scores = add_muscular_scores(df_with_delays, muscular_scores_to_remove=muscular_scores_to_remove)
+    df_with_motricity = motricity_score(df_with_muscular_scores)
+    df_final = clean_assessments(df_with_motricity, joints_assessments_to_remove, other_cols_to_remove)
 
     root = tk.Tk()
     root.withdraw()  # Hide the main window
-    output_folder_path = filedialog.askdirectory(title="Select a Folder to Save")
-    output_file = os.path.join(output_folder_path, "final_data_matrix.xlsx")
+    output_dir = filedialog.askdirectory(title="Select a Folder to Save")
+    output_file = os.path.join(output_dir, "final_data_matrix.xlsx")
 
     df_final.to_excel(os.path.join(output_file), index=False)
     print(f"Final data matrix has been saved to '{output_file}'.")
@@ -197,4 +210,128 @@ if __name__ == "__main__":
     test = "6MWT"
     keys = ["TOUT", "6MWT"]
     dict_days = {"delay_injury": ["date", "Date of injury"], "delay_loko": ["date", "Entrée en MPR"]}
-    assessment_to_clean = ["A_Ever", "etc."]
+    joints_to_remove = [
+        "Artic_hip_abd_D_pre",
+        "Artic_hip_abd_G_pre",
+        "Artic_hip_add_D_pre",
+        "Artic_hip_add_G_pre",
+        "Artic_hip_rot_ext_D_pre",
+        "Artic_hip_rot_ext_G_pre",
+        "Artic_hip_rot_int_D_pre",
+        "Artic_hip_rot_int_G_pre",
+        "Ank_ext_D_pre",
+        "Ank_ext_G_pre",
+    ]
+    muscular_scores_to_remove = [
+        "H_abd_G_pre",
+        "H_add_D_pre",
+        "H_add_G_pre",
+        "H_rot_int_D_pre",
+        "H_rot_int_G_pre",
+        "H_rot_ext_D_pre",
+        "H_rot_ext_G_pre",
+        "K_ext_D_pre",
+        "K_ext_G_pre",
+        "K_flex_D_pre",
+        "K_flex_G_pre",
+        "A_flex_dors_GF_D_pre",
+        "A_flex_dors_GF_G_pre",
+        "A_flex_dors_GT_D_pre",
+        "A_flex_dors_GT_G_pre",
+        "A_flex_plant_D_pre",
+        "A_flex_plant_G_pre",
+        "A_eversion_D_pre",
+        "A_eversion_G_pre",
+        "Sartorius_D_pre",
+        "Sartorius_G_pre",
+        "Iliopsoas_D_pre",
+        "Iliopsoas_G_pre",
+        "Adductor_D_pre",
+        "Adductor_G_pre",
+        "RF_D_pre",
+        "RF_G_pre",
+        "QF_D_pre",
+        "QF_G_pre",
+        "Gracilis_D_pre",
+        "Gracilis_G_pre",
+        "TA_D_pre",
+        "TA_G_pre",
+        "TP_D_pre",
+        "TP_G_pre",
+        "GM_D_pre",
+        "GM_G_pre",
+        "Gm_D2_pre",
+        "Gm_G2_pre",
+        "TFL_D_pre",
+        "TFL_G_pre",
+        "Ext_Hall_D_pre",
+        "Ext_Hall_G_pre",
+        "Ext_Dig_D_pre",
+        "Ext_Dig_G_pre",
+        "Ext_Dig_Brev_D_pre",
+        "Ext_Dig_Brev_G_pre",
+        "SmTD_D_pre",
+        "SmTD_G_pre",
+        "Smbr_D_pre",
+        "Smbr_G_pre",
+        "Fibu_long_D_pre",
+        "Fibu_long_G_pre",
+        "Gastroc_D_pre",
+        "Gastroc_G_pre",
+        "Sol_D_pre",
+        "Sol_G_pre",
+        "Fib_Brev_D_pre",
+        "Fib_Brev_G_pre",
+        "Gmax_D_pre",
+        "Gmax_G_pre",
+        "FHL_D_pre",
+        "FHL_G_pre",
+        "FDL_D_pre",
+        "FDL_G_pre",
+        "Bic_Fem_D_pre",
+        "Bic_Fem_G_pre",
+        "Intris_D_pre",
+        "Intris_g_pre",
+        "H_flex_assid_D_pre",
+        "H_flex_assid_G_pre",
+        "H_flex_GT_D_pre",
+        "H_flex_GT_G_pre",
+        "H_ext_PP_D_pre",
+        "H_ext_PP_G_pre",
+        "H_ext_GF_D_pre",
+        "H_ext_GF_G_pre",
+        "H_abd_D_pre",
+        "H_abd_G_Pre",
+        "H_add_d_Pre",
+        "H_add_g_Pre",
+        "H_rot_int_d_Pre",
+        "H_rot_int_g_Pre",
+        "H_rot_ext_d_Pre",
+        "H_rot_ext_g_Pre",
+        "K_ext_d_Pre",
+        "K_ext_g_Pre",
+        "K_flex_d_Pre",
+        "K_flex_g_Pre",
+        "A_flex_dors_GF_d_Pre",
+        "A_flex_dors_GF_g_Pre",
+        "A_flex_dors_GT_d_Pre",
+        "A_flex_dors_GT_g_Pre",
+        "A_flex_plant_d_Pre",
+        "A_flex_plant_g_Pre",
+        "A_eversion_d_Pre",
+        "A_eversion_g_Pre",
+    ]
+
+    assessment_to_remove = [
+        "MIF_pre",
+        "sub_SCIM_pre",
+        "SCIM_pre",
+        "TUG_sec_pre",
+        "Perim_marche_m_pre",
+        "Aide technique_pre",
+        "BBS_pre",
+        "MIF_Loco_pre",
+        "Unnamed: 12",
+    ]
+
+    main(keys, dict_days, muscular_scores_to_remove, joints_to_remove, assessment_to_remove, test)
