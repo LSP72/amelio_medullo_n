@@ -27,6 +27,29 @@ class DataCleaning:
         return df[df["tests"].isin(keys)]
 
     @staticmethod
+    def clean_lesion_type(df, column_name):
+        """Cleans the 'Trouble neuro' column by categorizing lesion types.
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            The original dataframe containing the 'Trouble neuro' column.
+        column_name : str
+            The name of the column to clean (e.g., 'Trouble neuro').
+
+        Returns
+        -------
+        pd.DataFrame
+            The dataframe with the cleaned lesion types.
+        """
+
+        condition = ~df[column_name].isin(["BM", "AVC"])
+        df.loc[condition, column_name] = "Autre"
+        df.drop(["Commentaire sur TN"], axis=1, inplace=True)
+
+        return df
+
+    @staticmethod
     def fix_value_of_test(df, tests, condition_col, new_value):
         """Fixes the value of a test based on a condition in another column.
 
@@ -73,3 +96,14 @@ class DataCleaning:
         """
 
         return col.replace("0?", 0)
+
+    @staticmethod
+    def clean_motricity_scores(df, file):
+        df["AIS"] = df["AIS"].replace(["A", "B", "C", "D", "E"], [1, 2, 3, 4, 5])
+
+        df = df.merge(file[["IPP", "FAC"]], on="IPP", how="left")
+        df.rename(columns={"FAC": "motricity"}, inplace=True)
+        df["motricity"] = df["motricity"].combine_first(df["AIS"])
+        df.drop(columns=["SCI lesion", "AIS"], inplace=True)
+
+        return df
