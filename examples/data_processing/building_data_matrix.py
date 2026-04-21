@@ -174,7 +174,7 @@ def clean_assessments(df: pd.DataFrame, joints_assessment_to_remove: list, other
         DataFrame with the nonuse columns dropped.
     """
     df.drop(columns=joints_assessment_to_remove + other_cols_to_remove, inplace=True)
-    df.drop(columns=[col for col in df.columns if col.endswith("_post") and col!="6MWT_m_post"], inplace=True)
+    df.drop(columns=[col for col in df.columns if col.endswith("_post") and col != "6MWT_m_post"], inplace=True)
     print("Selected assessment columns and all 'post' columns have been dropped.")
 
     return df
