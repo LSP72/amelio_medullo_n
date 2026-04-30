@@ -47,6 +47,7 @@ class MuscleScore:
             except ValueError:
                 return np.nan
 
+    @staticmethod
     def convert_muscles_to_movements(df, mapping_dict):
         """Calculates the max score for movements based on collaborative muscles.
 
@@ -101,7 +102,7 @@ class MuscleScore:
 
     # TODO: fix the suffix changing the name of the columns in the original df, if needed
     @staticmethod
-    def transform_dict_to_side(mapping_dict, side):
+    def transform_dict_to_side(mapping_dict, side, keys=True):
         """
         Transforms the mapping dictionary to match the name of the dataframe columns which includes muscleside.
 
@@ -118,29 +119,17 @@ class MuscleScore:
             A new dictionary with only the muscles on the specified side.
         """
         if side == "right":
-            suffix = "_D_pre_pre"
+            suffix = "_D_pre"
         elif side == "left":
-            suffix = "_G_pre_pre"
+            suffix = "_G_pre"
         else:
             raise ValueError("Side must be 'left' or 'right'")
 
         transformed_dict = {}
         for movement, muscles in mapping_dict.items():
-            transformed_dict[movement + suffix] = [muscle + suffix for muscle in muscles]
+            if keys == True:
+                transformed_dict[movement + suffix] = [muscle + suffix for muscle in muscles]
+            else:
+                transformed_dict[movement] = [muscle + suffix for muscle in muscles]
         return transformed_dict
 
-
-class Calculus:
-    def __init__(self, value):
-        pass
-
-    @staticmethod
-    def calculate_MCID(pre_data, post_data, threshold) -> list:
-        delta = post_data - pre_data
-        MCID = []
-        for i in delta:
-            if i >= threshold:
-                MCID.append(1)
-            else:
-                MCID.append(0)
-        return pd.Series(MCID, index=pre_data.index)

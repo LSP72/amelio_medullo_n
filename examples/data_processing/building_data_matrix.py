@@ -3,8 +3,14 @@ import pandas as pd
 import tkinter as tk
 from tkinter import filedialog
 
-from amelio_medullo import DemographicData, DataCleaning, MuscleScore, DemographicData, ProcessExcel, Calculus
+from amelio_medullo import DemographicData, DataCleaning, MuscleScore, DemographicData, ProcessExcel, Calculus, FunctionalLevel
 
+"""
+    This scripts builds the matrix to be then able to use it in ML model testsings.
+    It takes different files as inputs:
+        - file_path: path to the raw excel file in which we will collect the different data (i.e., demo, funct tests, etc.)
+        - 
+"""
 
 def collect_initial_file(keys: list, file_path: str = None):
     """Function to collect and select the participants.
@@ -32,13 +38,15 @@ def collect_initial_file(keys: list, file_path: str = None):
     data = pd.read_excel(file_path)
 
     data_final = DataCleaning.select_patients_with_complete_data(data, keys)
-    data_final = DataCleaning.clean_lesion_type(data_final, "Trouble neuro")
+    data_final = DataCleaning.clean_lesion_type(data_final, "Neurol_cond")
 
     return data_final
 
 
 def clean_data(df: pd.DataFrame):
-    """Function to clean the data.
+    """Function to clean the data:
+        - fix the values of the different tests columns depending on walked perimeter
+        - to clean the data from the str values (i.e., to put integers instaed of "0?")
 
     Parameters
     ----------
@@ -97,8 +105,10 @@ def calculate_days(df: pd.DataFrame, dict_days: dict):
     return df
 
 
-def add_muscular_scores(df: pd.DataFrame, muscular_scores_to_remove: list = None):
+def add_muscular_scores(df: pd.DataFrame, muscular_scores_to_remove: list = None, combined_muscular_path: str = None):
     """Function that adds the muscular scores to the matrices.
+        This function supposes that the combined_muscular_scores was already
+        created and has a path (i.e., )
 
     Parameters
     ----------
@@ -119,8 +129,9 @@ def add_muscular_scores(df: pd.DataFrame, muscular_scores_to_remove: list = None
                 df.drop(columns=score, inplace=True)
 
     # STEP 2: Add the muscular scores to the df.
-    file_path = ProcessExcel.collect_excel_file_path()
-    muscular_data = pd.read_excel(file_path)
+    if combined_muscular_path is None:
+        combined_muscular_path = ProcessExcel.collect_excel_file_path()
+    muscular_data = pd.read_excel(combined_muscular_path)
     df = df.merge(muscular_data, on="IPP", how="left")
 
     print("Muscular scores have been added to the dataframe.")
@@ -128,9 +139,8 @@ def add_muscular_scores(df: pd.DataFrame, muscular_scores_to_remove: list = None
     return df
 
 
-# TODO: change the func once the SCI motricity will be collected.
-def motricity_score(df, file_path=None):
-    """Function to calculate the motricity score.
+def functional_score(df, file_path=None):
+    """Function to calculate the functional score.
 
     Parameters
     ----------
@@ -144,15 +154,15 @@ def motricity_score(df, file_path=None):
     Returns
     -------
     pd.DataFrame
-        DataFrame containing the calculated motricity scores.
+        DataFrame containing the calculated functional scores.
     """
     if file_path is None:
         file_path = ProcessExcel.collect_excel_file_path()
     file = pd.read_excel(file_path)
 
-    df = DataCleaning.clean_motricity_scores(df, file)
+    df = FunctionalLevel.functional_categories(df)
 
-    print("Motricity scores have been added to the original dataframe.")
+    print("Functional scores have been added to the original dataframe.")
 
     return df
 
@@ -194,8 +204,8 @@ def main(
     df_cleaned = clean_data(df)
     df_with_delays = calculate_days(df_cleaned, dict_days)
     df_with_muscular_scores = add_muscular_scores(df_with_delays, muscular_scores_to_remove=muscular_scores_to_remove)
-    df_with_motricity = motricity_score(df_with_muscular_scores)
-    df_final = clean_assessments(df_with_motricity, joints_assessments_to_remove, other_cols_to_remove)
+    df_with_func_scores = functional_score(df_with_muscular_scores)
+    df_final = clean_assessments(df_with_func_scores, joints_assessments_to_remove, other_cols_to_remove)
 
     root = tk.Tk()
     root.withdraw()  # Hide the main window
