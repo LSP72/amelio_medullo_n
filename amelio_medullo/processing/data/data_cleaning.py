@@ -23,8 +23,9 @@ class DataCleaning:
         pd.DataFrame
             A dataframe containing only patients with complete data in the specified columns.
         """
-
-        return df[df["tests"].isin(keys)]
+        df = df[df["tests"].isin(keys)]
+        df = df[df["PRE_POST_BOTH"] == "BOTH"]
+        return df
 
     @staticmethod
     def clean_lesion_type(df, column_name):
@@ -97,13 +98,3 @@ class DataCleaning:
 
         return col.replace("0?", 0)
 
-    @staticmethod
-    def clean_motricity_scores(df, file):
-        df["AIS"] = df["AIS"].replace(["A", "B", "C", "D", "E"], [1, 2, 3, 4, 5])
-
-        df = df.merge(file[["IPP", "FAC"]], on="IPP", how="left")
-        df.rename(columns={"FAC": "motricity"}, inplace=True)
-        df["motricity"] = df["motricity"].combine_first(df["AIS"])
-        df.drop(columns=["SCI lesion", "AIS"], inplace=True)
-
-        return df
