@@ -3,8 +3,22 @@ import pandas as pd
 
 
 class MuscleScore:
-    def __init__(self, value):
-        pass
+    def __init__(self):
+        self.dict_mvt = {
+        "H_Flex_ass": ["Sartorius", "Iliopsoas"],
+        "H_Ext_PP": ["Gmax"],
+        "H_abd": ["GM"],
+        "H_add": ["Adductor"],
+        "H_rot_int": ["Gm"],
+        "K_Flex": ["SmTD", "Smbr", "Bic_Fem"],
+        "K_Ext": ["RF", "QF", "Gracilis"],
+        "A_Dorsiflex_GT": ["TA"],
+        "A_Plantarflex": ["Gastroc", "Sol"],
+        "A_Ever": ["Fibu_long"],
+        "A_Inver": ["TP"],
+        "H_ext_GF": ["H_ext_GF"],
+        "A_dorsiflex_GF": ["A_dorsiflex_GF"],
+        }
 
     @staticmethod
     def _clean_muscle_score(val):
@@ -133,3 +147,30 @@ class MuscleScore:
                 transformed_dict[movement] = [muscle + suffix for muscle in muscles]
         return transformed_dict
 
+    @staticmethod
+    def _combine_muscle_scores(df, mapping_dict, side=None):
+        if side :
+            mapping_dict = MuscleScore.transform_dict_to_side(mapping_dict, side)
+        
+        movement_scores = MuscleScore.convert_muscles_to_movements(df, mapping_dict)
+
+        # for col in cols_to_add:
+        #     if col not in movement_scores.columns.to_list():
+        #         movement_scores = movement_scores.merge(df[["IPP", col]], on="IPP", how="right")
+
+        return movement_scores
+    
+    def add_muscle_scores(self, df, selected_leg:bool=True):
+        if selected_leg :
+            combined_scores_df = MuscleScore._combine_muscle_scores(df, self.dict_mvt)
+            print(combined_scores_df.head())
+            
+        elif selected_leg == False :
+            right_scores = MuscleScore._combine_muscle_scores(df, self.dict_mvt, "right")
+            left_scores = MuscleScore._combine_muscle_scores(df, self.dict_mvt, "left")
+
+            combined_scores_df = right_scores.merge(left_scores, on="IPP", how="outer")
+            print(combined_scores_df.head())
+
+
+        return combined_scores_df

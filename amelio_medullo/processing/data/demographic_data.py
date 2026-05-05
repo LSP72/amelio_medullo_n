@@ -43,12 +43,16 @@ class FunctionalLevel:
     def _BM_cat(score: int):
         if pd.isna(score):
             return None
+        
+        if type(score) == str:
+            score = score.replace("?", "")
+            score = int(float(score))
 
         if score <= 2:
             return 0
         elif score == 3:
             return 2
-        elif score > 3 and score <= 7:
+        elif score >= 4 and score <= 7:
             return 3
         elif score == 8:
             return 4
@@ -92,4 +96,4 @@ class FunctionalLevel:
         Class 3: FAC 4 / SCIM 4-7
         Class 4: FAC 5 / SCIM 8
         """
-        return data.apply(FunctionalLevel.functional_categories, axis=1)
+        return data.apply(FunctionalLevel._categorise, axis=1)
