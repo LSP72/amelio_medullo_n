@@ -99,6 +99,8 @@ def count_and_calculate(data, final_data, ID):
     final_data.at[ID, "duration"] = count_nb_sessions(data, nb_of_sessions)
     print(f"Duration of the intervention (days): {final_data.at[ID, 'duration']} days")
 
+    data["cadence"] = data["Distance_pas"]/data["Durée_min"]
+
     for col in data.columns.to_list()[1:]:
         final_data.at[ID, col] = data[col].mean()
         print(f"Mean {col}: {final_data.at[ID, col]}")
@@ -118,9 +120,12 @@ def load_MCID_table(mcid_path=None):
         root.destroy()
 
     mcid_data = pd.read_excel(mcid_path)
+    end_data = mcid_data[["IPP", "6MWT_m_pre", "6MWT_m_post"]]
     MCID = Calculus.calculate_MCID_2(mcid_data)
+    
+    data = end_data.merge(MCID, on="IPP", how="left")
 
-    return MCID
+    return data
 
 
 def associate_and_calculate_MCID(mcid_data, final_data, ID):
@@ -144,17 +149,18 @@ def main(reports_folder_path=None, names_id_file=None, mcid_file=None):
     for file in list_of_files:
         data, ID = load_and_clean_data(names_file, file) # data = training data
         final_table = count_and_calculate(data, final_table, ID)
-        final_table = associate_and_calculate_MCID(mcid_table, final_table, ID)
+        # final_table = associate_and_calculate_MCID(mcid_table, final_table, ID)
     final_table.reset_index(names="IPP", inplace=True)
+    final_table = final_table.merge(mcid_table, on='IPP', how='left')
     final_table_with_func_level = final_table.merge(functional_table, on='IPP', how='right') # 'right' bcs want only the concerned participants (one session of Loko)
 
     print(final_table_with_func_level.head())
-    final_table_with_func_level.to_excel(os.path.join(reports_folder_path, "loko_final_table_session_separated.xlsx"), index=True)
+    final_table_with_func_level.to_excel(os.path.join(reports_folder_path, "loko_final_table_sessions_separated.xlsx"), index=True)
 
 
 
 if __name__ == "__main__":
-    reports_folder_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/LOKOMAT/Reports"
-    names_id_file = "/Users/mathildetardif/Documents/Documents/PhD/Nantes/autres/names_ipp.xlsx"
-    mcid_file = "/Users/mathildetardif/Documents/Documents/PhD/Nantes/data_drafts/prelim_table_2.xlsx"
+    reports_folder_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/LOKOMAT/Reports_separated_sessions"
+    names_id_file = "/Volumes/SP UFD U2/PhD/Stage Nantes/data/autres/names_ipp.xlsx"
+    mcid_file = "/Volumes/SP UFD U2/PhD/Stage Nantes/data/datasets/final/final_data_matrix_sessions_separated.xlsx"
     main(reports_folder_path, names_id_file, mcid_file)
