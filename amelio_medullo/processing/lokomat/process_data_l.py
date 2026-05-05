@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from openpyxl import load_workbook
 import os
+from rapidfuzz import process, fuzz
 
 
 class ProcessDataLokomat:
@@ -57,9 +58,18 @@ class ProcessDataLokomat:
 
         return df
 
-    def clean_data_columns(file_path):
+    @staticmethod
+    def load_and_preprocess_data(file_path):
+
+        excel_file = pd.ExcelFile(file_path)
+        sheet_name = excel_file.sheet_names[0]  # Assuming the data is in the first sheet
+
         data = pd.read_excel(file_path, header=[0, 1])
         data.drop(data.columns[33:], axis=1, inplace=True)
+        return data, sheet_name
+
+    @staticmethod
+    def clean_data_columns(data):
 
         data.columns = [ProcessDataLokomat._clean_col_name(col) for col in data.columns]
         print(data.columns.tolist())
@@ -97,6 +107,7 @@ class ProcessDataLokomat:
         else:
             return sub
 
+    @staticmethod
     def merge_same_day(data):
 
         merged_data = (
@@ -128,3 +139,73 @@ class ProcessDataLokomat:
 
         print(f"Rows with same dates have been merged.")
         return merged_data
+
+    @staticmethod
+    def find_patient_id(name_input, data, name_col="names", id_col="IPP", threshold=80):
+        """Find the ID of the patient.
+
+        Parameters
+        ----------
+        name_input : str
+            Name of the patient to find.
+        data : pd.DataFrame
+            DataFrame containing patient information (i.e., names and IDs).
+        name_col : str, optional
+            Column name for the patient names, by default "names"
+        id_col : str, optional
+            Column name for the patient IDs, by default "IPP"
+        threshold : int, optional
+            Minimum similarity score for a match, by default 80
+
+        Returns
+        -------
+        int or None
+            The ID of the matched patient, or None if no match is found.
+        """
+
+        # Normalize everything to lowercase for comparison
+        names_list = data["names"].str.lower().tolist()
+        name_input_lower = name_input.lower()
+        data["IPP"] = data["IPP"].fillna(0)  # Replace NaN with -1 for matching
+        data["IPP"] = data["IPP"].astype(int)
+
+        # Find the best match
+        match = process.extractOne(
+            name_input_lower,
+            names_list,
+            scorer=fuzz.WRatio,  # Handles partial matches, inversions, etc.
+            score_cutoff=threshold,
+        )
+
+        if match is None:
+            print(f"No match found for '{name_input}' (threshold: {threshold})")
+            return None
+
+        matched_name_lower, score, index = match
+        matched_row = data["IPP"].iloc[index]
+
+        print(f"Matched '{name_input}' → '{matched_row}' (score: {score:.1f})")
+        return matched_row
+
+    @staticmethod
+    def calculate_sessions_metrics(data):
+        """Function that calculates the number of weeks and the frequency of sessions per week.
+           This function assumes that the data has already been merged for same-day sessions.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+             DataFrame containing the infos from th report.
+
+        Returns
+        -------
+        nb_of_weeks, nb_sessions_per_week: tuple
+            (number of weeks, average sessions per week)
+        """
+        data["Date"] = pd.to_datetime(data["Date"])
+
+        weekly_counts = data.set_index("Date").resample("W").size()
+        nb_of_weeks = len(weekly_counts)
+        nb_sessions_per_week = weekly_counts.mean()
+
+        return nb_of_weeks, nb_sessions_per_week
