@@ -19,21 +19,22 @@ def combine_muscle_scores(df, mapping_dict, cols_to_add, side=None):
     return movement_scores
 
 
-def combine_both_sides(df, mapping_dict, cols_to_add, splitted_legs:bool=True):
-    if splitted_legs == True :
+def add_muscular_scores(df, mapping_dict, cols_to_add, selected_leg:bool=True):
+    if selected_leg == False :
         right_scores = combine_muscle_scores(df, mapping_dict, cols_to_add, "right")
         left_scores = combine_muscle_scores(df, mapping_dict, cols_to_add, "left")
 
         combined_scores_df = right_scores.combine_first(left_scores)
         print(combined_scores_df.head())
 
-    elif splitted_legs == False :
-        scores = combine_muscle_scores(df, mapping_dict, cols_to_add)
+    elif selected_leg == True :
+        combined_scores_df = combine_muscle_scores(df, mapping_dict, cols_to_add)
+        print(combined_scores_df.head())
 
     return combined_scores_df
 
 
-def main(dict_mvt_BM, cols_to_add, file_path=None):
+def main(dict_mvt_BM, cols_to_add, file_path=None, selected_leg = False, save = False):
     if file_path is None:
         root = tk.Tk()
         root.withdraw()
@@ -43,13 +44,15 @@ def main(dict_mvt_BM, cols_to_add, file_path=None):
 
     data = pd.read_excel(file_path)
 
-    splitted_legs = False
-    combined_scores_df = combine_both_sides(data, dict_mvt_BM, cols_to_add, splitted_legs)
+    combined_scores_df = add_muscular_scores(data, dict_mvt_BM, cols_to_add, selected_leg)
 
-    directory_path = os.path.dirname(file_path)
-    output_file = directory_path + "/combined_movement_scores.xlsx"
-    combined_scores_df.to_excel(output_file, index=False)
+    if save == True:
+        directory_path = os.path.dirname(file_path)
+        output_file = directory_path + "/combined_movement_scores.xlsx"
+        combined_scores_df.to_excel(output_file, index=False)
     print(f"Combined movement scores have been saved to {output_file}.")
+
+    return combined_scores_df
 
 
 if __name__ == "__main__":
@@ -68,13 +71,13 @@ if __name__ == "__main__":
         "A_Inver": ["TP"],
     }
     cols_to_add = [
-        "H_Ext_GF_D_pre_pre",
-        "H_Ext_GF_G_pre_pre",
-        "A_Dorsiflex_GF_D_pre_pre",
-        "A_Dorsiflex_GF_G_pre_pre",
+        "H_Ext_GF_D_pre",
+        "H_Ext_GF_G_pre",
+        "A_Dorsiflex_GF_D_pre",
+        "A_Dorsiflex_GF_G_pre",
     ] 
 
-
+    selected_leg = False
     file_path = "/Users/mathildetardif/Documents/Documents/PhD/Nantes/m_a_testings_pre_post_data.xlsx"
 
-    main(dict_mvt_BM, cols_to_add, file_path)
+    main(dict_mvt_BM, cols_to_add, file_path, selected_leg, save=True)
