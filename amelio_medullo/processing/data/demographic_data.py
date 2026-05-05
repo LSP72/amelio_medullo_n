@@ -50,12 +50,10 @@ class FunctionalLevel:
 
         if score <= 2:
             return 0
-        elif score == 3:
+        elif score >= 3 and score <= 4:
+            return 1
+        elif score >= 5:
             return 2
-        elif score >= 4 and score <= 7:
-            return 3
-        elif score == 8:
-            return 4
         else:
             raise ValueError(f"Classification could not be done.")
 
@@ -63,14 +61,12 @@ class FunctionalLevel:
     def _AVC_cat(score):
         if pd.isna(score):
             return None
-        if score <= 2:
+        if score <= 1:
             return 0
-        elif score == 3:
+        elif score >= 2 and score <= 3:
+            return 1
+        elif score >= 4:
             return 2
-        elif score == 4:
-            return 3
-        elif score == 5:
-            return 4
         else:
             raise ValueError(f"Classification could not be done.")
 
@@ -80,20 +76,26 @@ class FunctionalLevel:
             funct = row["SCIM-12"]
             return FunctionalLevel._BM_cat(funct)
 
-        elif row["Neurol_cond"] in ["AVC", "Autre"]:
+        elif row["Neurol_cond"] == "AVC":
             funct = row["FAC"]
             return FunctionalLevel._AVC_cat(funct)
-
+        
         else:
-            return None
+            if row["Neurol_detailed"] == "FAC":
+                funct = row["FAC"]
+                return FunctionalLevel._AVC_cat(funct)
+            elif row["Neurol_detailed"] == "SCIM":
+                funct = row["SCIM-12"]
+                return FunctionalLevel._BM_cat(funct)
+            else:
+                return None
 
     @staticmethod
     def functional_categories(data):
         """ "
         This function takes the data excel and from the demographic sheet it derives the functional classification
-        Class 0: FAC 0-2 / SCIM 0-2
-        Class 2: FAC 3 / SCIM 3
-        Class 3: FAC 4 / SCIM 4-7
-        Class 4: FAC 5 / SCIM 8
+        Class 0: FAC 0-1 / SCIM 0-2
+        Class 1: FAC 2-3 / SCIM 3-4
+        Class 2: FAC 4-5 / SCIM 5-8
         """
         return data.apply(FunctionalLevel._categorise, axis=1)
