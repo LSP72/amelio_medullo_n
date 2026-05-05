@@ -54,7 +54,7 @@ def load_and_clean_data(names_file, data_path=None):
 
     # identify the ID with the sheet_name
     ID = ProcessDataLokomat.find_patient_id(sheet_name, names_file, name_col="names", id_col="IPP")
-
+    
     return data, ID
 
 
@@ -69,6 +69,16 @@ def load_names_file(names_id_path=None):
 
     return names_file
 
+def load_functional_table(file_path=None):
+    if file_path is None:
+            root = tk.Tk()
+            root.withdraw()  # Hide the main window
+            file_path = filedialog.askopenfilename(title="Select Names ID File", filetypes=[("Excel files", "*.xlsx")])
+            root.destroy()
+
+    file = pd.read_excel(file_path)
+    return file[["IPP", "functional_level"]]
+
 
 def count_nb_sessions(data, nb_of_sessions=1):
     start_date = data["Date"].iloc[0]
@@ -78,7 +88,6 @@ def count_nb_sessions(data, nb_of_sessions=1):
 
 
 def count_and_calculate(data, final_data, ID):
-
     print("* " * 20)
     print(f"Process report {ID}")
     data = ProcessDataLokomat.merge_same_day(data)
@@ -88,7 +97,7 @@ def count_and_calculate(data, final_data, ID):
     print(f"Number of sessions: {nb_of_sessions}")
 
     final_data.at[ID, "duration"] = count_nb_sessions(data, nb_of_sessions)
-    print(f"Duration of the intervention: {final_data.at[ID, 'duration']} days")
+    print(f"Duration of the intervention (days): {final_data.at[ID, 'duration']} days")
 
     for col in data.columns.to_list()[1:]:
         final_data.at[ID, col] = data[col].mean()
@@ -96,6 +105,7 @@ def count_and_calculate(data, final_data, ID):
 
     nb_of_weeks, nb_sessions_per_week = ProcessDataLokomat.calculate_sessions_metrics(data)
     final_data.at[ID, "sessions_per_week"] = nb_sessions_per_week
+    print(f"Frequency of sessions: {nb_sessions_per_week} session/week")
 
     return final_data
 
@@ -108,14 +118,14 @@ def load_MCID_table(mcid_path=None):
         root.destroy()
 
     mcid_data = pd.read_excel(mcid_path)
-    MCID = Calculus.calculate_MCID(mcid_data["6MWT_m_pre"], mcid_data["6MWT_m_post"], threshold=45)
+    MCID = Calculus.calculate_MCID_2(mcid_data)
 
-    return pd.concat([mcid_data["IPP"], MCID], axis=1)
+    return MCID
 
 
 def associate_and_calculate_MCID(mcid_data, final_data, ID):
     if ID in mcid_data["IPP"].values:
-        MCID_value = mcid_data.loc[mcid_data["IPP"] == ID, 0].values[0]
+        MCID_value = mcid_data["MCID_classes"][mcid_data["IPP"] == ID].values[0]
         final_data.at[ID, "MCID_6MWT"] = MCID_value
         print(f"MCID for 6MWT: {MCID_value}")
     else:
@@ -129,14 +139,18 @@ def main(reports_folder_path=None, names_id_file=None, mcid_file=None):
     final_table = pd.DataFrame()
     list_of_files = collect_files(reports_folder_path)
     names_file = load_names_file(names_id_file)
-    MCID_table = load_MCID_table(mcid_file)
+    mcid_table = load_MCID_table(mcid_file)
+    functional_table = load_functional_table(mcid_file)
     for file in list_of_files:
-        data, ID = load_and_clean_data(names_file, file)
+        data, ID = load_and_clean_data(names_file, file) # data = training data
         final_table = count_and_calculate(data, final_table, ID)
-        final_table = associate_and_calculate_MCID(MCID_table, final_table, ID)
+        final_table = associate_and_calculate_MCID(mcid_table, final_table, ID)
+    final_table.reset_index(names="IPP", inplace=True)
+    final_table_with_func_level = final_table.merge(functional_table, on='IPP', how='right') # 'right' bcs want only the concerned participants (one session of Loko)
 
-    print(final_table.head())
-    final_table.to_excel(os.path.join(reports_folder_path, "final_table_2.xlsx"))
+    print(final_table_with_func_level.head())
+    final_table_with_func_level.to_excel(os.path.join(reports_folder_path, "loko_final_table_session_separated.xlsx"), index=True)
+
 
 
 if __name__ == "__main__":
