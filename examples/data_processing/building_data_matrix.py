@@ -2,8 +2,7 @@ import os
 import pandas as pd
 import tkinter as tk
 from tkinter import filedialog
-
-from amelio_medullo import DemographicData, DataCleaning, MuscleScore, DemographicData, ProcessExcel, Calculus, FunctionalLevel
+from amelio_medullo import DemographicData, DataCleaning, MuscleScore, DemographicData, ProcessExcel, Calculus, FunctionalLevel, LegSplit
 
 """
     This scripts builds the matrix to be then able to use it in ML model testsings.
@@ -40,7 +39,7 @@ def collect_initial_file(keys: list, file_path: str = None):
     data_final = DataCleaning.select_patients_with_complete_data(data, keys)
     data_final = DataCleaning.clean_lesion_type(data_final, "Neurol_cond")
 
-    return data_final
+    return data_final, file_path
 
 
 def clean_data(df: pd.DataFrame):
@@ -105,7 +104,7 @@ def calculate_days(df: pd.DataFrame, dict_days: dict):
     return df
 
 
-def add_muscular_scores(df: pd.DataFrame, muscular_scores_to_remove: list = None, combined_muscular_path: str = None):
+def add_muscular_scores(df: pd.DataFrame, muscular_scores_to_remove: list = None, selected_leg = False, combined_muscular_path: str = None):
     """Function that adds the muscular scores to the matrices.
         This function supposes that the combined_muscular_scores was already
         created and has a path (i.e., )
@@ -122,16 +121,21 @@ def add_muscular_scores(df: pd.DataFrame, muscular_scores_to_remove: list = None
     df : pd.DataFrame
         Matrix with the muscular scores added.
     """
-    # STEP 1: Clean the df from any muscular scores.
-    if muscular_scores_to_remove is not None:
-        for score in muscular_scores_to_remove:
-            if score in df.columns:
-                df.drop(columns=score, inplace=True)
 
-    # STEP 2: Add the muscular scores to the df.
-    if combined_muscular_path is None:
-        combined_muscular_path = ProcessExcel.collect_excel_file_path()
-    muscular_data = pd.read_excel(combined_muscular_path)
+    # STEP 1: Create or look for the matrix
+    if combined_muscular_path is not None:
+        # combined_muscular_path = ProcessExcel.collect_excel_file_path()
+        muscular_data = pd.read_excel(combined_muscular_path)
+        # muscular_data = df.merge(muscular_data, on="IPP", how="left")
+    
+    else:
+        muscular_data = MuscleScore().add_muscle_scores(df, selected_leg)
+
+    # STEP 2: Clean the df from any muscular scores.
+    if muscular_scores_to_remove is not None:
+        df = df.drop(columns=muscular_scores_to_remove, errors="ignore")
+
+    # STEP 3: merge the muscular matrix with the df
     df = df.merge(muscular_data, on="IPP", how="left")
 
     print("Muscular scores have been added to the dataframe.")
@@ -158,9 +162,11 @@ def functional_score(df, file_path=None):
     """
     if file_path is None:
         file_path = ProcessExcel.collect_excel_file_path()
-    file = pd.read_excel(file_path)
-
-    df = FunctionalLevel.functional_categories(df)
+    file = pd.read_excel(file_path, sheet_name="Demographics")
+    
+    functional_levels = FunctionalLevel.functional_categories(file)
+    functional_df = file[["IPP"]].assign(functional_level=functional_levels)
+    df = df.merge(functional_df, on="IPP", how="left")
 
     print("Functional scores have been added to the original dataframe.")
 
@@ -183,7 +189,7 @@ def clean_assessments(df: pd.DataFrame, joints_assessment_to_remove: list, other
     pd.DataFrame
         DataFrame with the nonuse columns dropped.
     """
-    df.drop(columns=joints_assessment_to_remove + other_cols_to_remove, inplace=True)
+    df.drop(columns=joints_assessment_to_remove + other_cols_to_remove, inplace=True, errors="ignore")
     df.drop(columns=[col for col in df.columns if col.endswith("_post") and col != "6MWT_m_post"], inplace=True)
     print("Selected assessment columns and all 'post' columns have been dropped.")
 
@@ -196,28 +202,32 @@ def main(
     muscular_scores_to_remove: list,
     joints_assessments_to_remove: list,
     other_cols_to_remove: list,
-    test: str,
+    selected_leg = False,
     file_path: str = None,
     output_dir: str = None,
 ):
-    df = collect_initial_file(keys, file_path)
+    df, file_path = collect_initial_file(keys, file_path)
     df_cleaned = clean_data(df)
     df_with_delays = calculate_days(df_cleaned, dict_days)
-    df_with_muscular_scores = add_muscular_scores(df_with_delays, muscular_scores_to_remove=muscular_scores_to_remove)
-    df_with_func_scores = functional_score(df_with_muscular_scores)
-    df_final = clean_assessments(df_with_func_scores, joints_assessments_to_remove, other_cols_to_remove)
+    df_with_muscular_scores = add_muscular_scores(df=df_with_delays, selected_leg=selected_leg, muscular_scores_to_remove=muscular_scores_to_remove)
+    df_with_func_scores = functional_score(df_with_muscular_scores, file_path)
+    if selected_leg == False:
+        df_with_selected_leg = LegSplit().split_legs(df_with_func_scores, arranged_with_muscular_grps=True)
+    else:
+        df_with_selected_leg = df_with_func_scores.copy()
+    df_final = clean_assessments(df_with_selected_leg, joints_assessments_to_remove, other_cols_to_remove)
 
-    root = tk.Tk()
-    root.withdraw()  # Hide the main window
-    output_dir = filedialog.askdirectory(title="Select a Folder to Save")
-    output_file = os.path.join(output_dir, "final_data_matrix.xlsx")
+    if output_dir is None:
+        root = tk.Tk()
+        root.withdraw()  # Hide the main window
+        output_dir = filedialog.askdirectory(title="Select a Folder to Save")
+    output_file = os.path.join(output_dir, "final_data_matrix_sessions_separated.xlsx")
 
     df_final.to_excel(os.path.join(output_file), index=False)
     print(f"Final data matrix has been saved to '{output_file}'.")
 
 
 if __name__ == "__main__":
-    test = "6MWT"
     keys = ["TOUT", "6MWT"]
     dict_days = {"delay_injury": ["date", "Date of injury"], "delay_loko": ["date", "Entrée en MPR"]}
     joints_to_remove = [
@@ -233,6 +243,15 @@ if __name__ == "__main__":
         "Ank_ext_G_pre",
     ]
     muscular_scores_to_remove = [
+        "H_flex_ass_D_pre",
+        "H_flex_ass_G_pre",
+        "H_flex_GT_D_pre",
+        "H_flex_GT_G_pre",
+        "H_ext_PP_D_pre",
+        "H_ext_PP_G_pre",
+        "H_ext_GF_D_pre",
+        "H_ext_GF_G_pre",
+        "H_abd_D_pre",
         "H_abd_G_pre",
         "H_add_D_pre",
         "H_add_G_pre",
@@ -244,12 +263,12 @@ if __name__ == "__main__":
         "K_ext_G_pre",
         "K_flex_D_pre",
         "K_flex_G_pre",
-        "A_flex_dors_GF_D_pre",
-        "A_flex_dors_GF_G_pre",
-        "A_flex_dors_GT_D_pre",
-        "A_flex_dors_GT_G_pre",
-        "A_flex_plant_D_pre",
-        "A_flex_plant_G_pre",
+        "A_dorsiflex_GF_D_pre",
+        "A_dorsiflex_GF_G_pre",
+        "A_dorsiflex_GT_D_pre",
+        "A_dorsiflex_GT_G_pre",
+        "A_plantarflex_D_pre",
+        "A_plantarflex_G_pre",
         "A_eversion_D_pre",
         "A_eversion_G_pre",
         "Sartorius_D_pre",
@@ -270,8 +289,8 @@ if __name__ == "__main__":
         "TP_G_pre",
         "GM_D_pre",
         "GM_G_pre",
-        "Gm_D2_pre",
-        "Gm_G2_pre",
+        "Gmin_D_pre",
+        "Gmin_G_pre",
         "TFL_D_pre",
         "TFL_G_pre",
         "Ext_Hall_D_pre",
@@ -301,35 +320,7 @@ if __name__ == "__main__":
         "Bic_Fem_D_pre",
         "Bic_Fem_G_pre",
         "Intris_D_pre",
-        "Intris_g_pre",
-        "H_flex_assid_D_pre",
-        "H_flex_assid_G_pre",
-        "H_flex_GT_D_pre",
-        "H_flex_GT_G_pre",
-        "H_ext_PP_D_pre",
-        "H_ext_PP_G_pre",
-        "H_ext_GF_D_pre",
-        "H_ext_GF_G_pre",
-        "H_abd_D_pre",
-        "H_abd_G_Pre",
-        "H_add_d_Pre",
-        "H_add_g_Pre",
-        "H_rot_int_d_Pre",
-        "H_rot_int_g_Pre",
-        "H_rot_ext_d_Pre",
-        "H_rot_ext_g_Pre",
-        "K_ext_d_Pre",
-        "K_ext_g_Pre",
-        "K_flex_d_Pre",
-        "K_flex_g_Pre",
-        "A_flex_dors_GF_d_Pre",
-        "A_flex_dors_GF_g_Pre",
-        "A_flex_dors_GT_d_Pre",
-        "A_flex_dors_GT_g_Pre",
-        "A_flex_plant_d_Pre",
-        "A_flex_plant_g_Pre",
-        "A_eversion_d_Pre",
-        "A_eversion_g_Pre",
+        "Intris_G_pre",
     ]
 
     assessment_to_remove = [
@@ -345,3 +336,6 @@ if __name__ == "__main__":
     ]
 
     main(keys, dict_days, muscular_scores_to_remove, joints_to_remove, assessment_to_remove, test)
+    main(keys=keys, dict_days=dict_days, muscular_scores_to_remove=muscular_scores_to_remove,
+         joints_assessments_to_remove=joints_to_remove, other_cols_to_remove=assessment_to_remove,
+         file_path=file_path)
