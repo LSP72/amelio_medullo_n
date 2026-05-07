@@ -100,6 +100,8 @@ def count_and_calculate(data, final_data, ID):
     print(f"Duration of the intervention (days): {final_data.at[ID, 'duration']} days")
 
     data["cadence"] = data["Distance_pas"]/data["Durée_min"]
+    data["step_length"] = data["Distance_m"]/data["Distance_pas"]
+    data["Guidage_%_MOY"] = data[["Guidage_G_%_MOY","Guidage_D_%_MOY"]].mean(axis=1)
 
     for col in data.columns.to_list()[1:]:
         final_data.at[ID, col] = data[col].mean()
