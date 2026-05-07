@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import tkinter as tk
 from tkinter import filedialog
-from amelio_medullo import DemographicData, DataCleaning, MuscleScore, DemographicData, ProcessExcel, Calculus, FunctionalLevel, LegSplit
+from amelio_medullo import DemographicData, DataCleaning, MuscleScore, ProcessExcel, Calculus, FunctionalLevel, LegSplit
 
 """
     This scripts builds the matrix to be then able to use it in ML model testsings.
@@ -143,7 +143,7 @@ def add_muscular_scores(df: pd.DataFrame, muscular_scores_to_remove: list = None
     return df
 
 
-def functional_score(df, file_path=None):
+def functional_score(df, separated=None, file_path=None):
     """Function to calculate the functional score.
 
     Parameters
@@ -163,13 +163,23 @@ def functional_score(df, file_path=None):
     if file_path is None:
         file_path = ProcessExcel.collect_excel_file_path()
     file = pd.read_excel(file_path, sheet_name="Demographics")
-    
+
     functional_levels = FunctionalLevel.functional_categories(file)
     functional_df = file[["IPP"]].assign(functional_level=functional_levels)
-    df = df.merge(functional_df, on="IPP", how="left")
 
+    df = df.merge(functional_df, on="IPP", how="left")
+    if separated:
+        df = df[df["Bilan entre"] != False]
     print("Functional scores have been added to the original dataframe.")
 
+    return df
+
+def calculate_cadence(df):
+    df["cadence"] = 60*df["10MWT_pas_pre"]/df["10MWT_sec_pre"]
+    return df
+
+def calculate_speed(df):
+    df["speed"] = 10/df["10MWT_sec_pre"]
     return df
 
 
@@ -195,6 +205,50 @@ def clean_assessments(df: pd.DataFrame, joints_assessment_to_remove: list, other
 
     return df
 
+def lesion_level(row):
+    dict_lesions = {
+        'Brain': 0,
+        'C1': 1,
+        'C2': 2,
+        'C3': 3,
+        'C4': 4,
+        'C5': 5,
+        'C6': 6,
+        'C7': 7,
+        'C8': 8,
+        'T1': 9,
+        'T2': 10,
+        'T3': 11,
+        'T4': 12,
+        'T5': 13,
+        'T6': 14,
+        'T7': 15,
+        'T8': 16,
+        'T9': 17,
+        'T10': 18,
+        'T11': 19,
+        'T12': 20,
+        'L1': 21,
+        'L2': 22,
+        'L3': 23,
+        'L4': 24,
+        'L5': 25,
+        'S1': 26,
+        'S2': 27,
+        'S3': 28,
+        'S4': 29,
+        'S5': 30,
+        
+    }
+    if row["Lesion"] in dict_lesions:
+        row["Lesion_num"] = dict_lesions[row["Lesion"]]
+    else:
+        row["Lesion_num"] = None
+
+    return row
+
+def apply_lesion_level(data):
+    return data.apply()
 
 def main(
     keys: list,
@@ -210,12 +264,17 @@ def main(
     df_cleaned = clean_data(df)
     df_with_delays = calculate_days(df_cleaned, dict_days)
     df_with_muscular_scores = add_muscular_scores(df=df_with_delays, selected_leg=selected_leg, muscular_scores_to_remove=muscular_scores_to_remove)
-    df_with_func_scores = functional_score(df_with_muscular_scores, file_path)
+    df_with_func_scores = functional_score(df_with_muscular_scores, file_path=file_path, separated=True)
     if selected_leg == False:
         df_with_selected_leg = LegSplit().split_legs(df_with_func_scores, arranged_with_muscular_grps=True)
     else:
         df_with_selected_leg = df_with_func_scores.copy()
-    df_final = clean_assessments(df_with_selected_leg, joints_assessments_to_remove, other_cols_to_remove)
+    df_with_cadence = calculate_cadence(df_with_selected_leg)
+    df_with_speed = calculate_speed(df_with_cadence)
+    df_with_lesion = df_with_speed.apply(lesion_level, axis=1)
+    df_with_BMI = DemographicData.calculate_BMI(df_with_lesion)
+    df_final = clean_assessments(df_with_BMI, joints_assessments_to_remove, other_cols_to_remove)
+    
 
     if output_dir is None:
         root = tk.Tk()
@@ -335,7 +394,7 @@ if __name__ == "__main__":
         "Unnamed: 12",
     ]
 
-    main(keys, dict_days, muscular_scores_to_remove, joints_to_remove, assessment_to_remove, test)
+    file_path = 
     main(keys=keys, dict_days=dict_days, muscular_scores_to_remove=muscular_scores_to_remove,
          joints_assessments_to_remove=joints_to_remove, other_cols_to_remove=assessment_to_remove,
          file_path=file_path)
