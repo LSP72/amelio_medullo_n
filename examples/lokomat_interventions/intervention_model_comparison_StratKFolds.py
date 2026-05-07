@@ -1,155 +1,259 @@
+import warnings
+warnings.filterwarnings('ignore')
+
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split, RepeatedStratifiedKFold, cross_val_score, cross_validate
-from sklearn.preprocessing import StandardScaler
-from imblearn.over_sampling import SMOTE
-from imblearn.pipeline import Pipeline
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.svm import SVC
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_auc_score, classification_report, roc_curve, auc, RocCurveDisplay
 import matplotlib.pyplot as plt
 import seaborn as sns
-import time
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import StratifiedKFold, cross_validate
+from sklearn.metrics import make_scorer                          
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.inspection import partial_dependence
+# from xgboost import XGBClassifier                               
+from imblearn.over_sampling import SMOTE
+from imblearn.pipeline import Pipeline
+from sklearn.model_selection import RandomizedSearchCV
 
 # Code based on a paper by Kuo et al. (2021)
 
+# ----- Functions to evaluate the models -----
 
-# Function to plot the ROC-AUC curve for each model
-def plot_cv_roc_curve(model, X, y, cv, model_name, output_path, show=True):
-    tprs = []
-    aucs = []
-    mean_fpr = np.linspace(0, 1, 100)
+def sensitivity(y_true, y_pred):
+    """TP / (TP + FN)"""
+    tp = ((y_pred == 1) & (y_true == 1)).sum()
+    fn = ((y_pred == 0) & (y_true == 1)).sum()
+    return tp / (tp + fn) if (tp + fn) > 0 else 0.0
+ 
+def specificity(y_true, y_pred):
+    """TN / (TN + FP)"""
+    tn = ((y_pred == 0) & (y_true == 0)).sum()
+    fp = ((y_pred == 1) & (y_true == 0)).sum()
+    return tn / (tn + fp) if (tn + fp) > 0 else 0.0
 
-    fig, ax = plt.subplots(figsize=(18, 16))
+# ----- Creating model dict -----
+def get_model():
+    """
+    Returns 5 models within a dict
 
-    # We must manually run the CV to get the curves for each fold
-    for i, (train, test) in enumerate(cv.split(X, y)):
-        x_train, x_test = X.iloc[train], X.iloc[test]
-        scaler = StandardScaler()
-        x_train_scaled = scaler.fit_transform(x_train)
-        x_test_scaled = scaler.transform(x_test)
-        model.fit(x_train_scaled, y.iloc[train])
-        viz = RocCurveDisplay.from_estimator(
-            model, x_test_scaled, y.iloc[test], name=f"ROC fold {i}", alpha=0.3, lw=1, ax=ax
+    """
+    classifiers = {
+        'Logistic Regression': LogisticRegression(max_iter=1000, random_state=42),
+        'Decision Tree'      : DecisionTreeClassifier(random_state=42),
+        'SVM'                : SVC(probability=True, random_state=42),
+        'Random Forest'      : RandomForestClassifier(n_estimators=100, random_state=42),
+        'XGBoost'            : GradientBoostingClassifier(              
+                                   n_estimators=100,
+                                   random_state=42,
+                               ),
+    }
+
+    models = {}
+    for name, clf in classifiers.items():
+        models[name] = Pipeline([
+            ('scaler' , StandardScaler()),                  # normalisation
+            ('smote'  , SMOTE(sampling_strategy='auto',random_state=42)),            
+            ('clf'    , clf),
+        ])
+
+    return models
+
+# ----- Function to train and evaluate the models -----
+def evaluate_models(X, y, models, param_grids, cv=10):
+    """
+    Optimise les hyperparamètres de chaque modèle par RandomizedSearchCV.
+    Retourne un DataFrame de résultats et les meilleurs modèles.
+    """
+    cv_splitter = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
+    results     = {}
+    best_models = {}
+    scoring = {
+        'auc'        : 'roc_auc',
+        'accuracy'   : 'accuracy',
+        'sensitivity': make_scorer(sensitivity),
+        'specificity': make_scorer(specificity),
+    }
+
+    print(f"\n Tuning des hyperparamètres (RandomizedSearchCV, {cv}-fold)...\n")
+
+    for name, pipeline in models.items():
+        if name not in param_grids:
+            print(f"  ⚠️  Pas de grille pour {name} — ignoré.")
+            continue
+
+        search = RandomizedSearchCV(
+            pipeline,
+            param_grids[name],
+            n_iter=50,          # 30 combinaisons aléatoires par modèle
+            cv=cv_splitter,
+            scoring='roc_auc',  # optimise sur l'AUC
+            random_state=42,
+            n_jobs=-1,
+            refit=True,         # réentraîne sur tout X avec les meilleurs params
         )
-        interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
-        interp_tpr[0] = 0.0
-        tprs.append(interp_tpr)
-        aucs.append(viz.roc_auc)
+        search.fit(X, y)
 
-    # Plot the Luck line
-    ax.plot([0, 1], [0, 1], "r--", label="Chance", alpha=0.8)
+        # # Récupère les scores CV du meilleur modèle
+        # best_idx = search.best_index_
+        # cv_res   = search.cv_results_
 
-    # Calculate and plot Mean ROC
-    mean_tpr = np.mean(tprs, axis=0)
-    mean_tpr[-1] = 1.0
-    mean_auc = auc(mean_fpr, mean_tpr)
-    std_auc = np.std(aucs)
+        # Recalcule toutes les métriques sur le meilleur modèle trouvé
+        scores = cross_validate(
+            search.best_estimator_, X, y,
+            cv=cv_splitter, scoring=scoring
+        )
 
-    ax.plot(
-        mean_fpr, mean_tpr, color="b", label=f"Mean ROC (AUC = {mean_auc:.2f} $\pm$ {std_auc:.2f})", lw=2, alpha=0.8
+        results[name] = {
+            'AUC'        : f"{scores['test_auc'].mean():.3f} +/- {scores['test_auc'].std():.3f}",
+            'Accuracy'   : f"{scores['test_accuracy'].mean():.3f} +/- {scores['test_accuracy'].std():.3f}",
+            'Sensitivity': f"{scores['test_sensitivity'].mean():.3f} +/- {scores['test_sensitivity'].std():.3f}",
+            'Specificity': f"{scores['test_specificity'].mean():.3f} +/- {scores['test_specificity'].std():.3f}",
+            '_auc_mean'  : scores['test_auc'].mean(),
+        }
+        best_models[name] = search.best_estimator_
+
+        print(f"  ✅ {name}")
+        print(f"     Meilleurs params : {search.best_params_}")
+        print(f"     AUC après tuning : {scores['test_auc'].mean():.3f}\n")
+
+    results_df = pd.DataFrame(results).T.sort_values('_auc_mean', ascending=False)
+    results_df = results_df.drop(columns='_auc_mean')
+    return results_df, best_models
+
+
+# ----- Functions to plot feature importance from RF -----
+def plot_feature_importance(X, y, feature_cols, top_n=20):
+    """
+    Entraîne un Random Forest sur tout le dataset et affiche
+    l'importance des variables (Mean Decrease in Impurity).
+    """
+    rf = RandomForestClassifier(n_estimators=100, random_state=42)
+    rf.fit(X, y)
+ 
+    importances = pd.Series(rf.feature_importances_, index=feature_cols)
+    importances = importances.sort_values(ascending=True).tail(top_n)
+ 
+    fig, ax = plt.subplots(figsize=(10, 8))
+    importances.plot(kind='barh', ax=ax, color='steelblue')
+    ax.set_xlabel('Importance (Mean Decrease in Impurity)', fontsize=12)
+    ax.set_title('Importance des Variables — Random Forest', fontsize=14, fontweight='bold')
+    ax.axvline(x=0, color='black', linewidth=0.8)
+    plt.tight_layout()
+    # plt.savefig('/mnt/user-data/outputs/feature_importance.png', dpi=150, bbox_inches='tight')
+    plt.close()
+    print("\n📊 Graphique d'importance des variables sauvegardé.")
+    return rf, importances
+ 
+
+# ----- Function to plot results table -----
+def plot_results_table(results_df, output_path):
+    """Sauvegarde le tableau de comparaison des modèles en PNG."""
+    fig, ax = plt.subplots(figsize=(11, 3))
+    ax.axis('off')
+    tbl = ax.table(
+        cellText=results_df.values,
+        rowLabels=results_df.index,
+        colLabels=results_df.columns,
+        cellLoc='center',
+        loc='center'
     )
+    tbl.auto_set_font_size(False)
+    tbl.set_fontsize(11)
+    tbl.scale(1.2, 2)
+ 
+    # Mettre en évidence la première ligne (meilleur modèle)
+    for j in range(len(results_df.columns)):
+        tbl[(1, j)].set_facecolor('#c8e6c9')
+ 
+    ax.set_title('Comparaison des modèles ML — Validation croisée 10-fold',
+                 fontsize=13, fontweight='bold', pad=20)
+    plt.tight_layout()
+    plt.savefig(f'{output_path}/results_table_selected_feature_SMOTE_SVM_forced_at_lin.png', dpi=150, bbox_inches='tight')
+    plt.close()
+    print("📊 Tableau des résultats sauvegardé.")
 
-    # Shade the confidence interval (Stability)
-    std_tpr = np.std(tprs, axis=0)
-    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
-    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
-    ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color="grey", alpha=0.2, label="$\pm$ 1 std. dev.")
+#%% ----- MAIN -----
 
-    ax.set(
-        xlabel="False Positive Rate (1 - Specificity)",
-        ylabel="True Positive Rate (Sensitivity)",
-        title=f"ROC Curve: {model_name}",
-    )
-    ax.legend(loc="lower right")
-    plt.savefig(f"{output_path}/ROC_Curve_{model_name.replace(' ', '_')}.png", dpi=300)
-    if show == True:
-        plt.show()
+def main(file_path: str, cols_to_keep: list, output_path: str):
+    
+    print("=" * 60)
+    print("  PREDICTION OF 6MWT DISTANCE (LOKOMAT)")
+    print("  Inspired by Kuo et al. (2021)")
+    print("=" * 60)
+ 
+    # 1. Loading and preparing the data
+    data = pd.read_excel(file_path)
+    data = data[cols_to_keep]
+    X = data.drop(columns=["6MWT_m_post", "MCID_classes"])
+    y = data["MCID_classes"]
 
+    # 2. Models to consider
+    models = get_model()
 
-# %% DATA LOADING & PREPROCESSING
-data = pd.read_excel("/Volumes/SP UFD U2/PhD/Stage Nantes/LOKOMAT/reports_final_table.xlsx")
-output_path = "/Users/mathildetardif/Documents/Python/Biomarkers/amelio_medullo_n/results/Intervention_results/Model_Comparison_Results"
-data.dropna(subset=["MCID_6MWT"], inplace=True)  # Remove rows with missing target variable
-y = data["MCID_6MWT"]
-X = data.drop(columns=["MCID_6MWT"])
+    # 3. Get models' parameters to optimise
+    param_grids = {
+        'Logistic Regression': {
+            'clf__C'      : [0.001, 0.01, 0.1, 1, 10, 100],
+            'clf__penalty': ['l1', 'l2'],
+            'clf__solver' : ['liblinear', 'saga'],
+        },
+        'Decision Tree': {
+            'clf__max_depth'       : [2, 3, 4, 5, None],
+            'clf__min_samples_leaf': [2, 3, 5, 8, 10],
+            'clf__criterion'       : ['gini', 'entropy'],
+        },
+        'SVM': {
+            'clf__C'     : [0.01, 0.1, 1, 10, 100],
+            'clf__kernel': ['linear'],
+            'clf__gamma' : ['scale', 'auto', 0.001, 0.01],
+        },
+        'Random Forest': {
+            'clf__n_estimators'    : [50, 100, 200, 300],
+            'clf__max_depth'       : [2, 3, 4, 5, None],
+            'clf__min_samples_leaf': [2, 3, 5, 8, 10],
+            'clf__max_features'    : ['sqrt', 'log2', 0.5],
+            'clf__class_weight'    : ['balanced', 'balanced_subsample'],
+        },
+        'XGBoost': {
+        'clf__n_estimators' : [50, 100, 200],
+        'clf__max_depth'    : [2, 3, 4, 5],
+        'clf__learning_rate': [0.01, 0.05, 0.1, 0.2],
+        'clf__subsample'    : [0.6, 0.8, 1.0],
+        'clf__max_features' : ['sqrt', 'log2', 0.5],  # remplace colsample_bytree
+        'clf__min_samples_leaf': [2, 3, 5],            # remplace reg_lambda
+    },
+    }
+ 
+    # 4. Train and evaluate
+    results_df, best_models = evaluate_models(X, y, models, param_grids)
+ 
+    print("\n" + "=" * 60)
+    print("  RESULTS  ")
+    print("=" * 60)
+    print(results_df.to_string())
+ 
+    # 5. Plots
+    plot_results_table(results_df, output_path)
+    rf_model, importances = plot_feature_importance(X, y, list(X.columns))
 
-# %%MACHINE LEARNING MODELS INITIALISATION
-# 3 classifiers have been compared
-models = {
-    "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
-    "Support Vector Machine": SVC(probability=True, random_state=42),
-    "Logistic Regression": LogisticRegression(random_state=42),
-    "Decision Tree": DecisionTreeClassifier(random_state=42),
-    "XGBoost": GradientBoostingClassifier(n_estimators=100, random_state=42),
-}
-cv_strategy = RepeatedStratifiedKFold(n_splits=5, n_repeats=5, random_state=42)  # stratifying to assess the stability
+    print("\n✅ Pipeline terminé. Fichiers générés dans /mnt/user-data/outputs/")
+    print("   - feature_importance.png")
+    print("   - partial_dependence_plots.png")
+    print("   - results_table.png")
+ 
+    return results_df, rf_model
 
-results = {}  # Dictionary to store the results for comparison
-
-# %% MODELS' TRAINING & EVALUATION
-# Using area under the curve (AUC) to assess the models
-
-plt.figure(figsize=(8, 6))
-
-for name, model in models.items():
-    print("\n" + "* " * 20)
-    print(f"Running for {name}")
-
-    # Build the Pipeline
-    stability_pipeline = Pipeline(
-        [("scaler", StandardScaler()), ("smote", SMOTE(random_state=42)), (name, model)]
-    )  # Pipeline ensures SMOTE only applied to the training folds in EACH split
-
-    print("Running Repeated Cross-Validation...")
-    scoring_metrics = ["roc_auc", "accuracy"]
-
-    # Use cross_validate instead of cross_val_score
-    cv_results = cross_validate(stability_pipeline, X, y, scoring=scoring_metrics, cv=cv_strategy, n_jobs=-1)
-
-    results[name] = cv_results["test_roc_auc"]
-
-    print(f"\n--- Model Stability of {name} ---")
-    print(f"Mean Accuracy:      {cv_results['test_accuracy'].mean():.4f}")
-    print(f"Stability (Std Dev): {cv_results['test_accuracy'].std():.4f}")
-    print(f"Mean AUC:           {cv_results['test_roc_auc'].mean():.4f}")
-    print(f"Stability (Std Dev): {cv_results['test_roc_auc'].std():.4f}")
-    print(f"Median AUC:         {np.median(cv_results['test_roc_auc']):.4f}")
-    print(f"Minimum AUC observed: {cv_results['test_roc_auc'].min():.4f}")
-    print(f"Maximum AUC observed: {cv_results['test_roc_auc'].max():.4f}")
-
-    plot_cv_roc_curve(stability_pipeline, X, y, cv_strategy, name, output_path)
-
-    # fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
-    # plt.plot(fpr, tpr, label=f"{name} (AUC = {auc:.4f})")
-
-# %% VISUALISATION OF THE MODELS' VARIABILITY
-results_df = pd.DataFrame(results)
-
-plt.figure(figsize=(10, 6))
-
-sns.boxplot(
-    data=results_df, palette="pastel", showfliers=False  # Outliers hidden, so won't overlap with the stripplot points
-)
-
-sns.stripplot(data=results_df, color="black", alpha=0.6, jitter=True, size=6)
-
-plt.title(f"Assessment of Model Stability Across 25 Random Data Splits", fontsize=14, pad=15)
-plt.ylabel("ROC AUC Score", fontsize=12)
-plt.xlabel("Machine Learning Algorithm", fontsize=12)
-plt.grid(axis="y", linestyle="--", alpha=0.7)
-plt.ylim(0.4, 1.05)
-
-plt.tight_layout()
-plt.show()
-
-
-# %% FEATURE IMPORTANCE ANALYSIS (if RF was good)
-
-# rf_model = models['Random Forest']
-# feature_importances = pd.Series(rf_model.feature_importances_, index=X.columns)
-
-# print("Top Predictors of Ambulatory Progress:")
-# print(feature_importances.sort_values(ascending=False).head(5))
+if __name__ == '__main__':
+    file_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/LOKOMAT/loko_final_table_sessions_separated.xlsx"
+    # cols_to_keep = ["nb_sessions",	"duration",	"Distance_m",	"Distance_pas",	"Durée_min",	"Vitesse_kmh_MIN",	"Vitesse_kmh_MAX",	"Vitesse_kmh_MOY",	"BWS_%_MIN",	"BWS_%_MAX",
+    #                      "BWS_%_MOY",	"BWS_kg_MIN",	"BWS_kg_MAX",	"BWS_kg_MOY",	"Guidage_G_%_MIN",	"Guidage_G_%_MAX",	"Guidage_G_%_MOY",	"Guidage_D_%_MIN",	"Guidage_D_%_MAX",
+    #                      "Guidage_D_%_MOY",	"sessions_per_week",	"6MWT_m_pre", "6MWT_m_post", "MCID_classes",	"functional_level"]
+    cols_to_keep = ["nb_sessions",	"duration",	"Durée_min", "Vitesse_kmh_MOY", "BWS_%_MOY", "step_length",
+                            "Guidage_%_MOY",	"sessions_per_week",	"6MWT_m_pre",	"6MWT_m_post",	"MCID_classes",
+                            "functional_level"]
+    output_path = "results/loko_results/Kuo_approach"
+    main(file_path, cols_to_keep, output_path)

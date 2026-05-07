@@ -22,7 +22,7 @@ print(time.time())
 
 data = pd.read_excel("/Volumes/SP UFD U2/PhD/Stage Nantes/LOKOMAT/loko_final_table_sessions_separated.xlsx")
 data = data[["nb_sessions",	"duration",	"Durée_min", "Vitesse_kmh_MOY", "BWS_%_MOY", "step_length",
-                           "Guidage_%_MOY",	"sessions_per_week",	"6MWT_m_pre",	"6MWT_m_post",	"MCID_classes",
+                           "Guidage_%_MOY",	"sessions_per_week",	"6MWT_m_pre",	"MCID_classes",
                            "functional_level"]]
 X = data.drop(columns=["6MWT_m_post", "MCID_classes"])
 y = data["MCID_classes"]
@@ -153,7 +153,7 @@ def optimize_and_train(model_name, config, x_train, y_train, cv):
 print(f"\n\n===== Processing =====\n")
 
 if stratify_input == "True":
-    strats = [y.to_list()]  # [data["Neurol_cond"]]
+    strats = y
 else:
     strats = [None]
 

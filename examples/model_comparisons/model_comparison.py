@@ -18,7 +18,23 @@ print(time.time())
 
 data = pd.read_excel("/Users/mathildetardif/Documents/Documents/PhD/Nantes/data_drafts/prelim_table_2.xlsx")
 MCID = Calculus.calculate_MCID(data["6MWT_m_pre"], data["6MWT_m_post"], threshold=45)
-data.drop(columns=["IPP", "6MWT_m_post", "Height", "Weight", "Nb sessions", "ASIA_mot_D_pre", "ASIA_mot_G_pre", "ASIA_mot_pre", "ASIA_LL_D", "ASIA_LL_G", "ASIA_LL", "10MWT_pas_pre"], inplace=True)
+data.drop(
+    columns=[
+        "IPP",
+        "6MWT_m_post",
+        "Height",
+        "Weight",
+        "Nb sessions",
+        "ASIA_mot_D_pre",
+        "ASIA_mot_G_pre",
+        "ASIA_mot_pre",
+        "ASIA_LL_D",
+        "ASIA_LL_G",
+        "ASIA_LL",
+        "10MWT_pas_pre",
+    ],
+    inplace=True,
+)
 X, y = data, MCID
 data["Trouble neuro"] = data["Trouble neuro"].replace(["AVC", "BM", "Autre"], [1, 2, 3])
 features_names = X.columns.to_list()
@@ -26,6 +42,7 @@ features_names = X.columns.to_list()
 imp_mean = IterativeImputer(missing_values=np.nan, n_nearest_features=5, random_state=42, imputation_order="ascending")
 imp_mean.fit(X)
 X = imp_mean.transform(X)
+
 
 def shap_analysis(model, x_train, x_test, features_names, model_name, strat):
     explainer = shap.KernelExplainer(model.predict, x_train)
@@ -113,7 +130,7 @@ if stratify == "True":
 
 else:
     print(f"\n\n===== Processing =====\n")
-    strats = [None, X[:,0]]  # No stratification and stratification by the target variable
+    strats = [None, X[:, 0]]  # No stratification and stratification by the target variable
 
     for strat in strats:
         if strat is None:
@@ -184,4 +201,6 @@ else:
         linear_svc.fit(x_train, y_train)
         linear_svc_score = linear_svc.score(x_test, y_test)
         print(f"Linear Support Vector Machine Accuracy: {linear_svc_score:.4f}")
-        shap_analysis(linear_svc, x_train, x_test, features_names, "linear_svc", "strat" if strat is not None else "no_strat")
+        shap_analysis(
+            linear_svc, x_train, x_test, features_names, "linear_svc", "strat" if strat is not None else "no_strat"
+        )
