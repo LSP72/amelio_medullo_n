@@ -54,7 +54,7 @@ def load_and_clean_data(names_file, data_path=None):
 
     # identify the ID with the sheet_name
     ID = ProcessDataLokomat.find_patient_id(sheet_name, names_file, name_col="names", id_col="IPP")
-    
+
     return data, ID
 
 
@@ -69,12 +69,13 @@ def load_names_file(names_id_path=None):
 
     return names_file
 
+
 def load_functional_table(file_path=None):
     if file_path is None:
-            root = tk.Tk()
-            root.withdraw()  # Hide the main window
-            file_path = filedialog.askopenfilename(title="Select Names ID File", filetypes=[("Excel files", "*.xlsx")])
-            root.destroy()
+        root = tk.Tk()
+        root.withdraw()  # Hide the main window
+        file_path = filedialog.askopenfilename(title="Select Names ID File", filetypes=[("Excel files", "*.xlsx")])
+        root.destroy()
 
     file = pd.read_excel(file_path)
     return file[["IPP", "functional_level"]]
@@ -99,9 +100,9 @@ def count_and_calculate(data, final_data, ID):
     final_data.at[ID, "duration"] = count_nb_sessions(data, nb_of_sessions)
     print(f"Duration of the intervention (days): {final_data.at[ID, 'duration']} days")
 
-    data["cadence"] = data["Distance_pas"]/data["Durée_min"]
-    data["step_length"] = data["Distance_m"]/data["Distance_pas"]
-    data["Guidage_%_MOY"] = data[["Guidage_G_%_MOY","Guidage_D_%_MOY"]].mean(axis=1)
+    data["cadence"] = data["Distance_pas"] / data["Durée_min"]
+    data["step_length"] = data["Distance_m"] / data["Distance_pas"]
+    data["Guidage_%_MOY"] = data[["Guidage_G_%_MOY", "Guidage_D_%_MOY"]].mean(axis=1)
 
     for col in data.columns.to_list()[1:]:
         final_data.at[ID, col] = data[col].mean()
@@ -124,7 +125,7 @@ def load_MCID_table(mcid_path=None):
     mcid_data = pd.read_excel(mcid_path)
     end_data = mcid_data[["IPP", "6MWT_m_pre", "6MWT_m_post"]]
     MCID = Calculus.calculate_MCID_2(mcid_data)
-    
+
     data = end_data.merge(MCID, on="IPP", how="left")
 
     return data
@@ -149,20 +150,23 @@ def main(reports_folder_path=None, names_id_file=None, mcid_file=None):
     mcid_table = load_MCID_table(mcid_file)
     functional_table = load_functional_table(mcid_file)
     for file in list_of_files:
-        data, ID = load_and_clean_data(names_file, file) # data = training data
+        data, ID = load_and_clean_data(names_file, file)  # data = training data
         final_table = count_and_calculate(data, final_table, ID)
         # final_table = associate_and_calculate_MCID(mcid_table, final_table, ID)
     final_table.reset_index(names="IPP", inplace=True)
-    final_table = final_table.merge(mcid_table, on='IPP', how='left')
-    final_table_with_func_level = final_table.merge(functional_table, on='IPP', how='right') # 'right' bcs want only the concerned participants (one session of Loko)
+    final_table = final_table.merge(mcid_table, on="IPP", how="left")
+    final_table_with_func_level = final_table.merge(
+        functional_table, on="IPP", how="right"
+    )  # 'right' bcs want only the concerned participants (one session of Loko)
 
     print(final_table_with_func_level.head())
-    final_table_with_func_level.to_excel(os.path.join(reports_folder_path, "loko_final_table_sessions_separated.xlsx"), index=True)
-
+    final_table_with_func_level.to_excel(
+        os.path.join(reports_folder_path, "loko_final_table_sessions_separated.xlsx"), index=True
+    )
 
 
 if __name__ == "__main__":
-    reports_folder_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/LOKOMAT/Reports_separated_sessions"
-    names_id_file = "/Volumes/SP UFD U2/PhD/Stage Nantes/data/autres/names_ipp.xlsx"
-    mcid_file = "/Volumes/SP UFD U2/PhD/Stage Nantes/data/datasets/final/final_data_matrix_sessions_separated.xlsx"
+    reports_folder_path = 
+    names_id_file = 
+    mcid_file = 
     main(reports_folder_path, names_id_file, mcid_file)

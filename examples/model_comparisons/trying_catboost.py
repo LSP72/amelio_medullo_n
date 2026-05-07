@@ -8,9 +8,25 @@ from sklearn.metrics import classification_report, ConfusionMatrixDisplay
 from amelio_medullo import Calculus
 
 # ── 1. Load and process data ──────────────────────────────────────────────────
-data = pd.read_excel("/Volumes/SP UFD U2/PhD/Stage Nantes/data/datasets/final/final_data_matrix_sessions_separated.xlsx")
+data = pd.read_excel()
 
-X = data[['Neurol_cond', 'Lesion_num', "Nb sessions", 'Sex', 'Age', 'Height', 'Weight', '6MWT_m_pre', '10MWT_pas_pre', '10MWT_sec_pre', 'delay_injury', 'delay_loko', 'functional_level']]
+X = data[
+    [
+        "Neurol_cond",
+        "Lesion_num",
+        "Nb sessions",
+        "Sex",
+        "Age",
+        "Height",
+        "Weight",
+        "6MWT_m_pre",
+        "10MWT_pas_pre",
+        "10MWT_sec_pre",
+        "delay_injury",
+        "delay_loko",
+        "functional_level",
+    ]
+]
 
 # X = data[["Neurol_cond", "Lesion", "Sex",	"Age",	"Height",	"Weight",	"6MWT_m_pre",	"10MWT_pas_pre",	"10MWT_sec_pre",	"delay_injury",	"delay_loko",
 #     "functional_level",	"Artic_hip_flex",	"Artic_hip_ext",	"Artic_hip_add",	"Artic_hip_abd",	"Artic_hip_rot_ext",	"Artic_hip_rot_int",	"Knee_flex",
@@ -21,12 +37,10 @@ y = Calculus.calculate_MCID(data["6MWT_m_pre"], data["6MWT_m_post"], threshold=4
 # Automatically detect categorical column
 cat_features = [col for col in X.columns if X[col].dtype == "object"]
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=72, stratify=y
-)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=72, stratify=y)
 # Convert NaN into string "missing'
 X_train[cat_features] = X_train[cat_features].fillna("missing").astype(str)
-X_test[cat_features]  = X_test[cat_features].fillna("missing").astype(str)
+X_test[cat_features] = X_test[cat_features].fillna("missing").astype(str)
 
 # ── 2. Training the CatBoost model ────────────────────────────────────────────────────
 model = CatBoostClassifier(
@@ -36,14 +50,10 @@ model = CatBoostClassifier(
     eval_metric="AUC",
     cat_features=cat_features,
     random_seed=42,
-    verbose=100
+    verbose=100,
 )
 
-model.fit(
-    X_train, y_train,
-    eval_set=(X_test, y_test),
-    early_stopping_rounds=50  # stopping if no improvement 
-)
+model.fit(X_train, y_train, eval_set=(X_test, y_test), early_stopping_rounds=50)  # stopping if no improvement
 
 # ── 3. Validation ────────────────────────────────────────────────────────────
 y_pred = model.predict(X_test)

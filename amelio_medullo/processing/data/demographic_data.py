@@ -36,8 +36,9 @@ class DemographicData:
 
     @staticmethod
     def calculate_BMI(data):
-        data["BMI"] = data["Weight"]/((data["Height"]/100)**2)
+        data["BMI"] = data["Weight"] / ((data["Height"] / 100) ** 2)
         return data
+
 
 class FunctionalLevel:
     def __init__(self):
@@ -47,7 +48,7 @@ class FunctionalLevel:
     def _BM_cat(score: int):
         if pd.isna(score):
             return None
-        
+
         if type(score) == str:
             score = score.replace("?", "")
             score = int(float(score))
@@ -83,7 +84,7 @@ class FunctionalLevel:
         elif row["Neurol_cond"] == "AVC":
             funct = row["FAC"]
             return FunctionalLevel._AVC_cat(funct)
-        
+
         else:
             if row["Neurol_detailed"] == "FAC":
                 funct = row["FAC"]

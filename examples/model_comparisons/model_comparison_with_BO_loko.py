@@ -20,13 +20,26 @@ from bayes_opt import BayesianOptimization
 # --- Data Loading and Preprocessing ---
 print(time.time())
 
-data = pd.read_excel("/Volumes/SP UFD U2/PhD/Stage Nantes/LOKOMAT/loko_final_table_sessions_separated.xlsx")
-data = data[["nb_sessions",	"duration",	"Durée_min", "Vitesse_kmh_MOY", "BWS_%_MOY", "step_length",
-                           "Guidage_%_MOY",	"sessions_per_week",	"6MWT_m_pre",	"MCID_classes",
-                           "functional_level"]]
+data = pd.read_excel()
+data = data[
+    [
+        "nb_sessions",
+        "duration",
+        "Durée_min",
+        "Vitesse_kmh_MOY",
+        "BWS_%_MOY",
+        "step_length",
+        "Guidage_%_MOY",
+        "sessions_per_week",
+        "6MWT_m_pre",
+        "MCID_classes",
+        "functional_level",
+    ]
+]
 X = data.drop(columns=["6MWT_m_post", "MCID_classes"])
 y = data["MCID_classes"]
 features_names = X.columns.to_list()
+
 
 # --- SHAP Analysis Function ---
 def shap_analysis(model, x_train, x_test, features_names, model_name, strat):
@@ -42,7 +55,7 @@ def shap_analysis(model, x_train, x_test, features_names, model_name, strat):
         plot_size=(8, 10),
         show=False,
     )
-    # save_path = f"/Users/mathildetardif/Documents/Python/Biomarkers/amelio_medullo_n/results/model_tests/shaps/{model_name}_{strat}_shap_plot.png"
+    # save_path = 
     # plt.savefig(save_path, bbox_inches="tight", dpi=300)
     plt.close()
 

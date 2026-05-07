@@ -39,9 +39,40 @@ data["Sex"] = data["Sex"].replace(["M", "F"], [1, 2])
 data.apply(DataCleaning.lesion_level_to_num, axis=1)
 # cols_to_keep = ['Neurol_cond', 'Lesion_num', 'Nb sessions', 'Sex', 'Age', 'Height', 'Weight', '6MWT_m_pre', '10MWT_pas_pre', '10MWT_sec_pre', 'delay_injury', 'delay_loko', 'functional_level']
 # cols_to_keep = ['Neurol_cond', 'Lesion_num', 'Nb sessions', 'Sex', 'Age', 'BMI', '6MWT_m_pre', '10MWT_pas_pre', '10MWT_sec_pre', 'delay_injury', 'delay_loko', 'functional_level']
-cols_to_keep = ["Neurol_cond", "Lesion", "Sex",	"Age",	"Height",	"Weight",	"6MWT_m_pre",	"10MWT_pas_pre",	"10MWT_sec_pre", "delay_injury",	"delay_loko",
-    "functional_level",	"Artic_hip_flex",	"Artic_hip_ext",	"Artic_hip_add",	"Artic_hip_abd",	"Artic_hip_rot_ext",	"Artic_hip_rot_int",	"Knee_flex",
-    "Knee_ext",	"Ank_flex_90",	"Ank_flex_180",	"Ank_ext",	"H_Flex_ass",	"H_Ext_PP",	"H_abd",	"H_add",	"H_rot_int",	"K_Flex",	"K_Ext",	"A_Dorsiflex_GT",	"A_Plantarflex"]
+cols_to_keep = [
+    "Neurol_cond",
+    "Lesion",
+    "Sex",
+    "Age",
+    "Height",
+    "Weight",
+    "6MWT_m_pre",
+    "10MWT_pas_pre",
+    "10MWT_sec_pre",
+    "delay_injury",
+    "delay_loko",
+    "functional_level",
+    "Artic_hip_flex",
+    "Artic_hip_ext",
+    "Artic_hip_add",
+    "Artic_hip_abd",
+    "Artic_hip_rot_ext",
+    "Artic_hip_rot_int",
+    "Knee_flex",
+    "Knee_ext",
+    "Ank_flex_90",
+    "Ank_flex_180",
+    "Ank_ext",
+    "H_Flex_ass",
+    "H_Ext_PP",
+    "H_abd",
+    "H_add",
+    "H_rot_int",
+    "K_Flex",
+    "K_Ext",
+    "A_Dorsiflex_GT",
+    "A_Plantarflex",
+]
 # cols_to_keep = ['Neurol_cond', 'Sex', 'Age', 'BMI', '6MWT_m_pre', '10MWT_pas_pre', '10MWT_sec_pre', 'delay_injury', 'delay_loko', 'functional_level', 'Artic_hip_flex', 'Artic_hip_abd', 'Ank_flex_90', 'Ank_flex_180', 'H_abd', 'Lesion_num']
 X = data[cols_to_keep]
 
@@ -59,17 +90,16 @@ shap_records, feature_imp_records = [], []
 # 2. --- Loop to collect all info ---
 for rdm_state, res in dict_3.items():
     # a. --- Extracting data from the it ---
-    test_idx = res['index_test']
+    test_idx = res["index_test"]
     y_pred = res["predictions"]
-    # y_proba = res["proba_predictions"] 
+    # y_proba = res["proba_predictions"]
     y_true = res["true_values"]
     # roc_auc = res["auc_test"]
-    shap_vals = res['shap_values'] 
-
+    shap_vals = res["shap_values"]
 
     acc_3.append(accuracy_score(y_true, y_pred))
     # aucs_3.append(roc_auc)
-  
+
     # b. --- Calculatin & interpolating for ROC curve ---
     # fpr, tpr, thresholds = roc_curve(y_true, y_proba)
     # interp_tpr = np.interp(mean_fpr, fpr, tpr)
@@ -81,7 +111,7 @@ for rdm_state, res in dict_3.items():
     shap_records.append(df_shap)
 
     # d. --- Saving for Feature Importance ---
-    feature_imp_df = res['model_fts_imp'] 
+    feature_imp_df = res["model_fts_imp"]
     feature_imp_df = feature_imp_df.set_index("Feature Id")
     feature_imp_df = feature_imp_df.rename(columns={"Importances": rdm_state})
     feature_imp_records.append(feature_imp_df)
@@ -98,7 +128,7 @@ all_feature_imp = pd.concat(feature_imp_records, axis=1)
 # Moyenne des valeurs SHAP pour chaque patient (sur toutes les fois où il était dans X_test)
 mean_shap_per_patient = all_shap.groupby(all_shap.index).mean()
 mean_feature_imp = all_feature_imp.mean(axis=1).sort_values(ascending=False)
-std_feature_imp  = all_feature_imp.std(axis=1)
+std_feature_imp = all_feature_imp.std(axis=1)
 
 # Moyenne globale sur tous les patients
 mean_shap_global = mean_shap_per_patient.mean(axis=0).sort_values(key=abs, ascending=False)
@@ -111,17 +141,10 @@ X_test_mean = X.loc[mean_shap_per_patient.index]
 # SHAP visualisations
 # ====================
 shap.summary_plot(
-    mean_shap_per_patient.values,
-    X_test_mean,
-    plot_type="bar",
-    title="Importance SHAP moyenne (100 itérations)"
+    mean_shap_per_patient.values, X_test_mean, plot_type="bar", title="Importance SHAP moyenne (100 itérations)"
 )
 
-shap.summary_plot(
-    mean_shap_per_patient.values,
-    X_test_mean,
-    title="Importance SHAP moyenne (100 itérations)"
-)
+shap.summary_plot(mean_shap_per_patient.values, X_test_mean, title="Importance SHAP moyenne (100 itérations)")
 
 # ====================================================
 # Feature importance from Catboost model visualisation
@@ -135,20 +158,20 @@ bars = ax.barh(
     xerr=std_feature_imp[mean_feature_imp.index],  # barre d'erreur
     color="steelblue",
     ecolor="gray",
-    capsize=3
+    capsize=3,
 )
 
 # Adding info texts (Mean ± SD) at the end of each bar
 for i, (feature, mean_val) in enumerate(mean_feature_imp.items()):
     std_val = std_feature_imp[feature]
-    
+
     text_str = f"{mean_val:.2f} ± {std_val:.2f}"
-    
+
     # x position:
-    marge = 0.02 * max(mean_feature_imp.values) # 2% de la valeur max pour aérer
+    marge = 0.02 * max(mean_feature_imp.values)  # 2% de la valeur max pour aérer
     x_pos = mean_val + std_val + marge
-    
-    ax.text(x_pos, i, text_str, va='center', ha='left', fontsize=9, color='black')
+
+    ax.text(x_pos, i, text_str, va="center", ha="left", fontsize=9, color="black")
 
 ax.invert_yaxis()
 ax.set_xlabel("Mean Importance")
@@ -156,7 +179,7 @@ ax.set_title("Feature Importance CatBoost (mean on 100 iterations)")
 
 # Adjusting X-axis
 xmax = max(mean_feature_imp.values + std_feature_imp[mean_feature_imp.index])
-ax.set_xlim(0, xmax * 1.25) 
+ax.set_xlim(0, xmax * 1.25)
 
 plt.tight_layout()
 # plt.savefig("results/catboost_results/feature_importance_from_CB_model.svg")

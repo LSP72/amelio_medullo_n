@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val
 from sklearn.preprocessing import StandardScaler
 from bayes_opt import BayesianOptimization
 
+
 # --- SHAP Analysis Function ---
 def shap_analysis(model, x_train, x_test, features_names):
     explainer = shap.KernelExplainer(model.predict, x_train)
@@ -29,6 +30,7 @@ def shap_analysis(model, x_train, x_test, features_names):
     plt.close()
 
     return shap_values
+
 
 # --- Bayesian Optimization Configuration ---
 
@@ -84,6 +86,7 @@ def optimize_and_train(model_name, config, x_train, y_train, cv):
 
     return best_model, best_params_formatted
 
+
 def train_and_validate(X, y, rdm_state, features_names):
     # --- Main Execution ---
     print(f"\n\n===== Processing {rdm_state} =====\n")
@@ -94,11 +97,11 @@ def train_and_validate(X, y, rdm_state, features_names):
     scaler = StandardScaler()
     x_train_scaled = scaler.fit_transform(x_train)
     x_test_scaled = scaler.transform(x_test)
-    
+
     results_dict_i = {
-        'index_train': x_train.index,
-        'index_test': y_test.index,
-        'true_values': y_test,
+        "index_train": x_train.index,
+        "index_test": y_test.index,
+        "true_values": y_test,
     }
 
     # Train, optimize, and evaluate each model
@@ -120,13 +123,10 @@ def train_and_validate(X, y, rdm_state, features_names):
         # Generate SHAP map
         shap_values = shap_analysis(best_model, x_train_scaled, x_test_scaled, features_names)
 
-        results_dict_i[model_name] = {
-            'accuracy': test_score,
-            'predictions': y_pred,
-            'shap_values': shap_values
-        }
+        results_dict_i[model_name] = {"accuracy": test_score, "predictions": y_pred, "shap_values": shap_values}
 
     return results_dict_i
+
 
 def save_dict(results_dict, output_path, separated_sessions=True):
     pickle_file_name = output_path + "/loko_results_all_features_100it_with_shap_with_cadence.pkl"
@@ -135,7 +135,7 @@ def save_dict(results_dict, output_path, separated_sessions=True):
 
 
 def main(data_path, cols_to_keep, rdm_state_list, output_path):
-        # --- Data Loading and Preprocessing ---
+    # --- Data Loading and Preprocessing ---
     print(time.time())
     data = pd.read_excel(data_path)
     data = data[cols_to_keep]
@@ -148,11 +148,24 @@ def main(data_path, cols_to_keep, rdm_state_list, output_path):
 
     save_dict(results_dict, output_path)
 
-if __name__ == '__main__':
-    data_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/LOKOMAT/loko_final_table_sessions_separated.xlsx"
-    cols_to_keep = ["nb_sessions",	"duration",	"Durée_min", "Vitesse_kmh_MOY", "BWS_%_MOY", "step_length",
-                            "Guidage_%_MOY",	"sessions_per_week",	"6MWT_m_pre",	"6MWT_m_post",	"MCID_classes",
-                            "functional_level", "cadence"]
+
+if __name__ == "__main__":
+    data_path = 
+    cols_to_keep = [
+        "nb_sessions",
+        "duration",
+        "Durée_min",
+        "Vitesse_kmh_MOY",
+        "BWS_%_MOY",
+        "step_length",
+        "Guidage_%_MOY",
+        "sessions_per_week",
+        "6MWT_m_pre",
+        "6MWT_m_post",
+        "MCID_classes",
+        "functional_level",
+        "cadence",
+    ]
     # cols_to_keep = ["nb_sessions",	"duration",	"Distance_m",	"Distance_pas",	"Durée_min",	"Vitesse_kmh_MIN",	"Vitesse_kmh_MAX",	"Vitesse_kmh_MOY",	"BWS_%_MIN",	"BWS_%_MAX",
     #                      "BWS_%_MOY",	"BWS_kg_MIN",	"BWS_kg_MAX",	"BWS_kg_MOY",	"Guidage_G_%_MIN",	"Guidage_G_%_MAX",	"Guidage_G_%_MOY",	"Guidage_D_%_MIN",	"Guidage_D_%_MAX",
     #                      "Guidage_D_%_MOY",	"sessions_per_week",	"6MWT_m_pre", "6MWT_m_post", "MCID_classes",	"functional_level"]
