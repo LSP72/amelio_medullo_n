@@ -33,7 +33,11 @@ class DemographicData:
         print(df[[col1, col2, new_col_name]].head())
 
         return df
-    
+
+    @staticmethod
+    def calculate_BMI(data):
+        data["BMI"] = data["Weight"]/((data["Height"]/100)**2)
+        return data
 
 class FunctionalLevel:
     def __init__(self):
