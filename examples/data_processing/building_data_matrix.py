@@ -11,6 +11,7 @@ from amelio_medullo import DemographicData, DataCleaning, MuscleScore, ProcessEx
         - 
 """
 
+
 def collect_initial_file(keys: list, file_path: str = None):
     """Function to collect and select the participants.
 
@@ -104,7 +105,9 @@ def calculate_days(df: pd.DataFrame, dict_days: dict):
     return df
 
 
-def add_muscular_scores(df: pd.DataFrame, muscular_scores_to_remove: list = None, selected_leg = False, combined_muscular_path: str = None):
+def add_muscular_scores(
+    df: pd.DataFrame, muscular_scores_to_remove: list = None, selected_leg=False, combined_muscular_path: str = None
+):
     """Function that adds the muscular scores to the matrices.
         This function supposes that the combined_muscular_scores was already
         created and has a path (i.e., )
@@ -127,7 +130,7 @@ def add_muscular_scores(df: pd.DataFrame, muscular_scores_to_remove: list = None
         # combined_muscular_path = ProcessExcel.collect_excel_file_path()
         muscular_data = pd.read_excel(combined_muscular_path)
         # muscular_data = df.merge(muscular_data, on="IPP", how="left")
-    
+
     else:
         muscular_data = MuscleScore().add_muscle_scores(df, selected_leg)
 
@@ -174,12 +177,14 @@ def functional_score(df, separated=None, file_path=None):
 
     return df
 
+
 def calculate_cadence(df):
-    df["cadence"] = 60*df["10MWT_pas_pre"]/df["10MWT_sec_pre"]
+    df["cadence"] = 60 * df["10MWT_pas_pre"] / df["10MWT_sec_pre"]
     return df
 
+
 def calculate_speed(df):
-    df["speed"] = 10/df["10MWT_sec_pre"]
+    df["speed"] = 10 / df["10MWT_sec_pre"]
     return df
 
 
@@ -205,40 +210,40 @@ def clean_assessments(df: pd.DataFrame, joints_assessment_to_remove: list, other
 
     return df
 
+
 def lesion_level(row):
     dict_lesions = {
-        'Brain': 0,
-        'C1': 1,
-        'C2': 2,
-        'C3': 3,
-        'C4': 4,
-        'C5': 5,
-        'C6': 6,
-        'C7': 7,
-        'C8': 8,
-        'T1': 9,
-        'T2': 10,
-        'T3': 11,
-        'T4': 12,
-        'T5': 13,
-        'T6': 14,
-        'T7': 15,
-        'T8': 16,
-        'T9': 17,
-        'T10': 18,
-        'T11': 19,
-        'T12': 20,
-        'L1': 21,
-        'L2': 22,
-        'L3': 23,
-        'L4': 24,
-        'L5': 25,
-        'S1': 26,
-        'S2': 27,
-        'S3': 28,
-        'S4': 29,
-        'S5': 30,
-        
+        "Brain": 0,
+        "C1": 1,
+        "C2": 2,
+        "C3": 3,
+        "C4": 4,
+        "C5": 5,
+        "C6": 6,
+        "C7": 7,
+        "C8": 8,
+        "T1": 9,
+        "T2": 10,
+        "T3": 11,
+        "T4": 12,
+        "T5": 13,
+        "T6": 14,
+        "T7": 15,
+        "T8": 16,
+        "T9": 17,
+        "T10": 18,
+        "T11": 19,
+        "T12": 20,
+        "L1": 21,
+        "L2": 22,
+        "L3": 23,
+        "L4": 24,
+        "L5": 25,
+        "S1": 26,
+        "S2": 27,
+        "S3": 28,
+        "S4": 29,
+        "S5": 30,
     }
     if row["Lesion"] in dict_lesions:
         row["Lesion_num"] = dict_lesions[row["Lesion"]]
@@ -247,8 +252,10 @@ def lesion_level(row):
 
     return row
 
+
 def apply_lesion_level(data):
     return data.apply()
+
 
 def main(
     keys: list,
@@ -263,7 +270,9 @@ def main(
     df, file_path = collect_initial_file(keys, file_path)
     df_cleaned = clean_data(df)
     df_with_delays = calculate_days(df_cleaned, dict_days)
-    df_with_muscular_scores = add_muscular_scores(df=df_with_delays, selected_leg=selected_leg, muscular_scores_to_remove=muscular_scores_to_remove)
+    df_with_muscular_scores = add_muscular_scores(
+        df=df_with_delays, selected_leg=selected_leg, muscular_scores_to_remove=muscular_scores_to_remove
+    )
     df_with_func_scores = functional_score(df_with_muscular_scores, file_path=file_path, separated=True)
     if selected_leg == False:
         df_with_selected_leg = LegSplit().split_legs(df_with_func_scores, arranged_with_muscular_grps=True)
@@ -395,6 +404,11 @@ if __name__ == "__main__":
     ]
 
     file_path = 
-    main(keys=keys, dict_days=dict_days, muscular_scores_to_remove=muscular_scores_to_remove,
-         joints_assessments_to_remove=joints_to_remove, other_cols_to_remove=assessment_to_remove,
-         file_path=file_path)
+    main(
+        keys=keys,
+        dict_days=dict_days,
+        muscular_scores_to_remove=muscular_scores_to_remove,
+        joints_assessments_to_remove=joints_to_remove,
+        other_cols_to_remove=assessment_to_remove,
+        file_path=file_path,
+    )

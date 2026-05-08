@@ -151,6 +151,7 @@ def main(data_path, cols_to_keep, rdm_state_list, output_path):
 
 if __name__ == "__main__":
     data_path = 
+    ## SELECTED FEATURES
     cols_to_keep = [
         "nb_sessions",
         "duration",
@@ -166,9 +167,10 @@ if __name__ == "__main__":
         "functional_level",
         "cadence",
     ]
+    ## ALL FEATURES
     # cols_to_keep = ["nb_sessions",	"duration",	"Distance_m",	"Distance_pas",	"Durée_min",	"Vitesse_kmh_MIN",	"Vitesse_kmh_MAX",	"Vitesse_kmh_MOY",	"BWS_%_MIN",	"BWS_%_MAX",
     #                      "BWS_%_MOY",	"BWS_kg_MIN",	"BWS_kg_MAX",	"BWS_kg_MOY",	"Guidage_G_%_MIN",	"Guidage_G_%_MAX",	"Guidage_G_%_MOY",	"Guidage_D_%_MIN",	"Guidage_D_%_MAX",
-    #                      "Guidage_D_%_MOY",	"sessions_per_week",	"6MWT_m_pre", "6MWT_m_post", "MCID_classes",	"functional_level"]
+    #                      "Guidage_D_%_MOY",	"sessions_per_week",	"6MWT_m_pre", "6MWT_m_post", "MCID_classes",	"functional_level", "cadence"]
     # random_state_list = [42]
     random_state_list = np.arange(1, 101)
     output_path = "results/loko_results"

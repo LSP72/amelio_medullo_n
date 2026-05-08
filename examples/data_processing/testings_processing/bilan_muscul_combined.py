@@ -7,9 +7,9 @@ from tkinter import filedialog
 
 
 def combine_muscle_scores(df, mapping_dict, cols_to_add, side=None):
-    if side :
+    if side:
         mapping_dict = MuscleScore.transform_dict_to_side(mapping_dict, side)
-    
+
     movement_scores = MuscleScore.convert_muscles_to_movements(df, mapping_dict)
 
     for col in cols_to_add:
@@ -19,22 +19,22 @@ def combine_muscle_scores(df, mapping_dict, cols_to_add, side=None):
     return movement_scores
 
 
-def add_muscular_scores(df, mapping_dict, cols_to_add, selected_leg:bool=True):
-    if selected_leg == False :
+def add_muscular_scores(df, mapping_dict, cols_to_add, selected_leg: bool = True):
+    if selected_leg == False:
         right_scores = combine_muscle_scores(df, mapping_dict, cols_to_add, "right")
         left_scores = combine_muscle_scores(df, mapping_dict, cols_to_add, "left")
 
         combined_scores_df = right_scores.combine_first(left_scores)
         print(combined_scores_df.head())
 
-    elif selected_leg == True :
+    elif selected_leg == True:
         combined_scores_df = combine_muscle_scores(df, mapping_dict, cols_to_add)
         print(combined_scores_df.head())
 
     return combined_scores_df
 
 
-def main(dict_mvt_BM, cols_to_add, file_path=None, selected_leg = False, save = False):
+def main(dict_mvt_BM, cols_to_add, file_path=None, selected_leg=False, save=False):
     if file_path is None:
         root = tk.Tk()
         root.withdraw()
@@ -75,7 +75,7 @@ if __name__ == "__main__":
         "H_Ext_GF_G_pre",
         "A_Dorsiflex_GF_D_pre",
         "A_Dorsiflex_GF_G_pre",
-    ] 
+    ]
 
     selected_leg = False
     file_path = "/Users/mathildetardif/Documents/Documents/PhD/Nantes/m_a_testings_pre_post_data.xlsx"
