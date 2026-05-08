@@ -1,5 +1,13 @@
 import pandas as pd
 import numpy as np
+import pickle as pkl
+from amelio_medullo import Calculus
+
+
+def merge_data_and_mcid(data):
+    MCID = Calculus.calculate_MCID_2(data, 30)
+    data = data.merge(MCID, on="IPP", how="left")
+    return data
 
 
 def generate_summary_stats(data, cont_cols, cat_cols, group_by_col=None):
@@ -23,7 +31,7 @@ def generate_summary_stats(data, cont_cols, cat_cols, group_by_col=None):
 
         # 1. Continuous Variables Summary
         if cont_cols:
-            # We use .agg to calculate exactly what you requested
+            # We use .agg to calculate exactly what requested
             cont_stats = (
                 df[cont_cols]
                 .agg(
@@ -76,9 +84,15 @@ def generate_summary_stats(data, cont_cols, cat_cols, group_by_col=None):
     return all_results
 
 
-def main(data_path, cont_cols, cat_cols):
+def main(data_path, cont_cols, cat_cols, output_path=None):
     data = pd.read_excel(data_path)
+    data = merge_data_and_mcid(data)
     stats_dictionary = generate_summary_stats(data, cont_cols, cat_cols, group_by_col="Sex")
+
+    if output_path:
+        pickle_file_name = output_path + "/general_stats_grouped_by_cat.pkl"
+        with open(pickle_file_name, "wb") as file:
+            pkl.dump(stats_dictionary, file)
 
     # How to view the results:
     print("--- OVERALL CONTINUOUS STATS ---")
@@ -87,17 +101,28 @@ def main(data_path, cont_cols, cat_cols):
     print("\n--- OVERALL CATEGORICAL STATS (Neurol_cond) ---")
     print(stats_dictionary["Overall"]["Categorical"]["Neurol_cond"].to_markdown())
 
-    print("\n--- CONTINUOUS STATS FOR MALES ---")
+    print("\n--- OVERALL CATEGORICAL STATS (MCID) ---")
+    print(stats_dictionary["Overall"]["Categorical"]["MCID_classes"].to_markdown())
+
+    print("\n--- OVERALL CATEGORICAL STATS (functional_level) ---")
+    print(stats_dictionary["Overall"]["Categorical"]["functional_level"].to_markdown())
+
+    print("\n--- CONTINUOUS STATS FOR MEN ---")
     print(stats_dictionary["Sex: M"]["Continuous"].to_markdown())
+    print("\n--- CATEGORICAL STATS FOR MEN ---")
+    print(pd.Series(stats_dictionary["Sex: F"]["Categorical"]).to_frame("value").to_markdown())
+
     print("\n--- CONTINUOUS STATS FOR WOMEN ---")
     print(stats_dictionary["Sex: F"]["Continuous"].to_markdown())
+    print("\n--- CATEGORICAL STATS FOR WOMEN ---")
+    print(pd.Series(stats_dictionary["Sex: F"]["Categorical"]).to_frame("value").to_markdown())
 
 
 if __name__ == "__main__":
     # Assuming 'data' is your merged dataframe
-    cont_cols = ["Age", "Height", "Weight"]
-    cat_cols = ["Sex", "functional_level", "Neurol_cond"]
+    cont_cols = ["Age", "Height", "Weight", "BMI"]
+    cat_cols = ["Sex", "functional_level", "Neurol_cond", "Lesion_num", "MCID_classes"]
 
-    data_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/data/datasets/final/final_data_matrix_sessions_separated.xlsx"
-
-    main(data_path, cont_cols, cat_cols)
+    data_path = 
+    output_path = "results/stats"
+    main(data_path, cont_cols, cat_cols, output_path)
