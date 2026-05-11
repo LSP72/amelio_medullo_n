@@ -63,7 +63,7 @@ def print_and_save_shapiro(df_shapiro, group_by, output_path=None):
     os.makedirs(output_path, exist_ok=True)
 
     # 1. Save the raw stats for the reviewers
-    excel_path = os.path.join(output_path, f"shapiro_stats.xlsx")
+    excel_path = os.path.join(output_path, f"shapiro_stats_for_merged_dataset.xlsx")
     df_shapiro.to_excel(excel_path, index=False)
 
     print(f"\n[Shapiro-Wilk Test Results for {group_by}]")
@@ -75,7 +75,7 @@ def main(data_path, cont_cols, cols_to_keep, cat_cols, group_by, output_path=Non
     np.random.seed(42)
 
     data = pd.read_excel(data_path)
-    data = merge_data_and_mcid(data)
+    # data = merge_data_and_mcid(data)
     df_shapiro, variables_non_normal = find_non_normal_col(data, cont_cols)
 
     print_and_save_shapiro(df_shapiro, group_by, output_path)
@@ -93,24 +93,88 @@ def main(data_path, cont_cols, cols_to_keep, cat_cols, group_by, output_path=Non
 
 if __name__ == "__main__":
 
-    data_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/data/datasets/final/final_data_matrix_sessions_separated.xlsx"
+    data_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/data/datasets/final/merged_data_final.xlsx"
     output_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/data"
+    # mapping_dict = {
+    #     "MCID_classes": {
+    #         "cols_to_keep": ["Age", "Height", "Sex", "Weight", "functional_level", "Neurol_cond"],
+    #         "cat_cols": ["Sex", "functional_level", "Neurol_cond"],
+    #         "cont_cols": ["Age", "Height", "Weight"],
+    #     },
+    #     "Neurol_cond": {
+    #         "cols_to_keep": ["Age", "Height", "Sex", "Weight", "functional_level", "MCID_classes"],
+    #         "cat_cols": ["Sex", "functional_level", "MCID_classes"],
+    #         "cont_cols": ["Age", "Height", "Weight"],
+    #     },
+    #     "Sex": {
+    #         "cols_to_keep": ["Age", "Height", "Weight", "functional_level", "Neurol_cond", "MCID_classes"],
+    #         "cat_cols": ["functional_level", "Neurol_cond", "MCID_classes"],
+    #         "cont_cols": ["Age", "Height", "Weight"],
+    #     },
+    # }
+    # Mapping dict for merged data
     mapping_dict = {
         "MCID_classes": {
-            "cols_to_keep": ["Age", "Height", "Sex", "Weight", "functional_level", "Neurol_cond"],
-            "cat_cols": ["Sex", "functional_level", "Neurol_cond"],
-            "cont_cols": ["Age", "Height", "Weight"],
-        },
+            "cols_to_keep": ["Sex", "functional_level", "Neurol_cond", "Lesion_num", "Age", "Height", "Weight", "BMI",  "nb_sessions",
+                        "duration",
+                        "Durée_min",
+                        "Vitesse_kmh_MOY",
+                        "BWS_%_MOY",
+                        "step_length",
+                        "Guidage_%_MOY",
+                        "sessions_per_week",
+                        "Nb sessions"],
+            "cat_cols": ["Sex", "functional_level", "Neurol_cond", "Lesion_num","Nb sessions"],
+            "cont_cols": ["Age", "Height", "Weight", "BMI",  "nb_sessions",
+                        "duration",
+                        "Durée_min",
+                        "Vitesse_kmh_MOY",
+                        "BWS_%_MOY",
+                        "step_length",
+                        "Guidage_%_MOY",
+                        "sessions_per_week"],
+            },
         "Neurol_cond": {
-            "cols_to_keep": ["Age", "Height", "Sex", "Weight", "functional_level", "MCID_classes"],
-            "cat_cols": ["Sex", "functional_level", "MCID_classes"],
-            "cont_cols": ["Age", "Height", "Weight"],
-        },
+            "cols_to_keep": ["Sex", "functional_level", "MCID_classes", "Lesion_num", "Age", "Height", "Weight", "BMI",  "nb_sessions",
+                        "duration",
+                        "Durée_min",
+                        "Vitesse_kmh_MOY",
+                        "BWS_%_MOY",
+                        "step_length",
+                        "Guidage_%_MOY",
+                        "sessions_per_week",
+                        "Nb sessions"],
+            "cat_cols": ["Sex", "functional_level", "MCID_classes", "Lesion_num", "Nb sessions"],
+            "cont_cols": ["Age", "Height", "Weight", "BMI",  "nb_sessions",
+                        "duration",
+                        "Durée_min",
+                        "Vitesse_kmh_MOY",
+                        "BWS_%_MOY",
+                        "step_length",
+                        "Guidage_%_MOY",
+                        "sessions_per_week"],
+            },
         "Sex": {
-            "cols_to_keep": ["Age", "Height", "Weight", "functional_level", "Neurol_cond", "MCID_classes"],
-            "cat_cols": ["functional_level", "Neurol_cond", "MCID_classes"],
-            "cont_cols": ["Age", "Height", "Weight"],
-        },
+            "cols_to_keep": ["MCID_classes", "functional_level", "Neurol_cond", "Lesion_num", "Age", "Height", "Weight", "BMI",  "nb_sessions",
+                        "duration",
+                        "Durée_min",
+                        "Vitesse_kmh_MOY",
+                        "BWS_%_MOY",
+                        "step_length",
+                        "Guidage_%_MOY",
+                        "sessions_per_week",
+                        "Nb sessions"],
+            "cat_cols": ["MCID_classes", "functional_level", "Neurol_cond", "Lesion_num", "Nb sessions"],
+            "cont_cols": ["Age", "Height", "Weight", "BMI",  "nb_sessions",
+                        "duration",
+                        "Durée_min",
+                        "Vitesse_kmh_MOY",
+                        "BWS_%_MOY",
+                        "step_length",
+                        "Guidage_%_MOY",
+                        "sessions_per_week",
+                        ],
+            },
     }
 
     # 2. Loop through the dictionary to run the analysis for each group
