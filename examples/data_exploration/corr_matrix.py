@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import tkinter as tk
 from tkinter import filedialog
+from amelio_medullo import DataCleaning
 
 
 def plot_and_save_corr_matrix(data, output_name, output_file_path):
@@ -20,9 +21,13 @@ def plot_and_save_corr_matrix(data, output_name, output_file_path):
     plt.show()
 
 
-def main(file_path, cols_to_keep, output_name, output_file_path):
+def main(file_path, cols_to_keep, output_name, output_file_path, num=True):
     data = pd.read_excel(file_path)
     data_kept = data[cols_to_keep]
+    if num:
+        data["Neurol_cond"] = data["Neurol_cond"].replace(["BM", "AVC", "Autre"], [1, 2, 3])
+        data["Sex"] = data["Sex"].replace(["M", "F"], [1, 2])
+        data.apply(DataCleaning.lesion_level_to_num, axis=1)
 
     plot_and_save_corr_matrix(data_kept, output_name, output_file_path)
 
@@ -138,8 +143,25 @@ if __name__ == "__main__":
         "functional_level",
         "cadence",
     ]
-
-    output_name = "loko_selected_features_3_with_cadence"
+    cols_to_keep_merged_1 = [
+        "nb_sessions",
+        "duration",
+        "Durée_min",
+        "Vitesse_kmh_MOY",
+        "BWS_%_MOY",
+        "cadence",
+        "step_length",
+        "Guidage_%_MOY",
+        "sessions_per_week",
+        "Neurol_cond",
+        "Sex",
+        "Age",
+        "Nb sessions",
+        "functional_level",
+        "Lesion_num",
+        "BMI",
+    ]
+    output_name = "merged_selected_features_1"
     output_file_path = "results/data_exploration/correlation_matrices/"
 
     main(file_path, cols_to_keep_loko_3, output_name, output_file_path)
