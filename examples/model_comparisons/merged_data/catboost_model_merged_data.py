@@ -63,13 +63,12 @@ def train_and_test_catboost(X, y, rdm_state):
         "auc_test": auc_test,
         "true_values": y_test,
         "shap_values": shap_values,
-        "model_fts_imp": feature_imp_df,
+        "model_fts_imp": feature_imp_df
     }
 
 
-def save_dict(results_dict, output_path):
-    pickle_file_name = (
-        output_path + "/catboost_results_merged_data_selected_features_perso_numerical_100it_with_shap_default.pkl"
+def save_dict(results_dict, output_path, num):
+    pickle_file_name = (f"{output_path}/catboost_results_merged_data_5_selected_features_+VIT_after_lasso.pkl"
     )
     with open(pickle_file_name, "wb") as file:
         pkl.dump(results_dict, file)
@@ -96,19 +95,20 @@ def main(data_path, cols_to_keep, random_state_list, output_path, num=True):
     results_dict = {}
     for rdm_state in random_state_list:
         results_dict[rdm_state] = train_and_test_catboost(X, y, rdm_state)
+        results_dict[rdm_state]["list_of_features"] = cols_to_keep
 
-    save_dict(results_dict, output_path)
+    save_dict(results_dict, output_path, num)
 
 
 if __name__ == "__main__":
     data_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/data/datasets/final/merged_data_final.xlsx"
-    # cols_to_keep = [
+    # cols_to_keep_0 = [
     #     "nb_sessions",	"duration",	"Durée_min", "Vitesse_kmh_MOY", "BWS_%_MOY", "cadence", "step_length",
     #     "Guidage_%_MOY", "sessions_per_week", "6MWT_m_pre", "Neurol_cond", "Sex", "Age", "Nb sessions",
     #     "delay_injury", "delay_loko", "functional_level", "Lesion_num", "BMI"
     #     ]
     # Removed all pre info, only let personal info
-    cols_to_keep = [
+    cols_to_keep_1 = [
         "nb_sessions",
         "duration",
         "Durée_min",
@@ -126,7 +126,36 @@ if __name__ == "__main__":
         "Lesion_num",
         "BMI",
     ]
+    # Removed highly correlated features (i.e., cadence (vitesse), )
+    cols_to_keep_2 = [
+        "nb_sessions",
+        # "duration",
+        "Durée_min",
+        "Vitesse_kmh_MOY",
+        "BWS_%_MOY",
+        "step_length",
+        "Guidage_%_MOY",
+        "sessions_per_week",
+        "Neurol_cond",
+        "Sex",
+        "Age",
+        "Nb sessions",
+        "functional_level",
+        "Lesion_num",
+        "BMI",
+    ]
+    # features for loko intervention only after lasso
+    cols_to_keep_3 = [
+        "nb_sessions",
+        "BWS_%_MOY",
+        "Vitesse_kmh_MOY", # ajoutée manuellement
+        "Guidage_%_MOY",
+        "6MWT_m_pre",
+        "cadence"
+    ]
+    # Selected features after Log Regression penalty L1
+
     # random_state_list = [42, 72]
     random_state_list = np.arange(1, 101)
     output_path = "results/catboost_results/merged_data"
-    main(data_path, cols_to_keep, random_state_list, output_path)
+    main(data_path, cols_to_keep_3, random_state_list, output_path, num=False)
