@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, roc_curve, auc
 from amelio_medullo import DataCleaning
 
-# dict_path_1 = "/Users/mathildetardif/Documents/Python/Biomarkers/amelio_medullo_n/results/catboost_results/catboost_results_True.pkl"
-# dict_path_2 = "/Users/mathildetardif/Documents/Python/Biomarkers/amelio_medullo_n/results/catboost_results/catboost_results_True_selected_features.pkl"
 # with open(dict_path_1, "rb") as file:
 #     dict_1 = pkl.load(file)
 
@@ -32,13 +30,16 @@ from amelio_medullo import DataCleaning
 
 
 ## ---------- Avec SHAP et sur 100 itérations ----------
-data_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/data/datasets/final/final_data_matrix_sessions_separated.xlsx"
+data_path = 
 data = pd.read_excel(data_path)
 data["Neurol_cond"] = data["Neurol_cond"].replace(["BM", "AVC", "Autre"], [1, 2, 3])
 data["Sex"] = data["Sex"].replace(["M", "F"], [1, 2])
 data.apply(DataCleaning.lesion_level_to_num, axis=1)
+# Features w/ < 30% missing
 # cols_to_keep = ['Neurol_cond', 'Lesion_num', 'Nb sessions', 'Sex', 'Age', 'Height', 'Weight', '6MWT_m_pre', '10MWT_pas_pre', '10MWT_sec_pre', 'delay_injury', 'delay_loko', 'functional_level']
+# Features w/ < 30% missing w/ BMI
 # cols_to_keep = ['Neurol_cond', 'Lesion_num', 'Nb sessions', 'Sex', 'Age', 'BMI', '6MWT_m_pre', '10MWT_pas_pre', '10MWT_sec_pre', 'delay_injury', 'delay_loko', 'functional_level']
+# all features
 cols_to_keep = [
     "Neurol_cond",
     "Lesion",
@@ -73,10 +74,12 @@ cols_to_keep = [
     "A_Dorsiflex_GT",
     "A_Plantarflex",
 ]
+# Features w/ <50% missing
 # cols_to_keep = ['Neurol_cond', 'Sex', 'Age', 'BMI', '6MWT_m_pre', '10MWT_pas_pre', '10MWT_sec_pre', 'delay_injury', 'delay_loko', 'functional_level', 'Artic_hip_flex', 'Artic_hip_abd', 'Ank_flex_90', 'Ank_flex_180', 'H_abd', 'Lesion_num']
+
 X = data[cols_to_keep]
 
-dict_path_3 = "/Users/mathildetardif/Documents/Python/Biomarkers/amelio_medullo_n/results/catboost_results/catboost_results_True_all_features_numerical_100it_with_shap.pkl"
+dict_path_3 = 
 with open(dict_path_3, "rb") as file:
     dict_3 = pkl.load(file)
 
@@ -117,7 +120,7 @@ for rdm_state, res in dict_3.items():
     feature_imp_records.append(feature_imp_df)
 
 # --- Printing metrics ---
-print("Results for selected features (100 it.):")
+print(f"Results for selected features ({len(dict_3.items())} it.):")
 print(f"Accuracy: {np.mean(acc_3):.3f} ± {np.std(acc_3):.3f}")
 print(f"AUC:      {np.mean(aucs_3):.3f} ± {np.std(aucs_3):.3f}")
 
@@ -140,11 +143,21 @@ X_test_mean = X.loc[mean_shap_per_patient.index]
 # ====================
 # SHAP visualisations
 # ====================
+# Collecting feature names
+feature_data = pd.read_excel("/Volumes/SP UFD U2/PhD/Stage Nantes/data/datasets/final/feature_names.xlsx")
+feature_name_dict = dict(zip(feature_data["features"], feature_data["features_names"]))
+features_names = [feature_name_dict.get(feature, feature) for feature in X_test_mean.columns.to_list()]
 shap.summary_plot(
-    mean_shap_per_patient.values, X_test_mean, plot_type="bar", title="Importance SHAP moyenne (100 itérations)"
+    mean_shap_per_patient.values,
+    X_test_mean,
+    plot_type="bar",
+    title=f"Importance SHAP moyenne ({len(dict_3.items())} itérations)",
+    feature_names=features_names,
 )
 
-shap.summary_plot(mean_shap_per_patient.values, X_test_mean, title="Importance SHAP moyenne (100 itérations)")
+shap.summary_plot(
+    mean_shap_per_patient.values, X_test_mean, title=f"Importance SHAP moyenne ({len(dict_3.items())} itérations)"
+)
 
 # ====================================================
 # Feature importance from Catboost model visualisation
@@ -175,7 +188,7 @@ for i, (feature, mean_val) in enumerate(mean_feature_imp.items()):
 
 ax.invert_yaxis()
 ax.set_xlabel("Mean Importance")
-ax.set_title("Feature Importance CatBoost (mean on 100 iterations)")
+ax.set_title(f"Feature Importance CatBoost (mean on {len(dict_3.items())} iterations)")
 
 # Adjusting X-axis
 xmax = max(mean_feature_imp.values + std_feature_imp[mean_feature_imp.index])
@@ -210,7 +223,31 @@ plt.show()
 # ax.set_ylim([-0.05, 1.05])
 # ax.set_xlabel('False Positive Rate (FPR)')
 # ax.set_ylabel('True Positive Rate (TPR)')
-# ax.set_title('ROC curve for 100 iterations')
+# ax.set_title(f'ROC curve for {len(dict_3.items())} iterations')
 # ax.legend(loc="lower right")
 # plt.tight_layout()
 # plt.show()
+
+
+# ==================
+# SHAP by categories
+# ==================
+
+cond_groups = X_test_mean["Neurol_cond"].map({1: "SCI", 2: "Stroke", 3: "Others"}).to_numpy()
+
+# Safety check
+assert len(cond_groups) == mean_shap_per_patient.shape[0]
+
+X_test_mean_copy = X_test_mean.drop(columns=["Neurol_cond"], axis=1)
+mean_shap_per_patient_copy = mean_shap_per_patient.drop(columns=["Neurol_cond"], axis=1)
+feature_name_dict = dict(zip(feature_data["features"], feature_data["features_names"]))
+features_names_copy = [feature_name_dict.get(feature, feature) for feature in X_test_mean_copy.columns.to_list()]
+
+# Create SHAP Explanation object from your averaged SHAP values
+shap_exp = shap.Explanation(
+    values=mean_shap_per_patient_copy.values, data=X_test_mean_copy.values, feature_names=features_names_copy
+)
+
+shap.plots.bar(shap_exp.cohorts(cond_groups).abs.mean(0), max_display=len(features_names_copy))
+
+print("Done.")
