@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import shap
 from catboost import CatBoostClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, ConfusionMatrixDisplay, roc_auc_score
+from sklearn.metrics import classification_report, ConfusionMatrixDisplay, roc_auc_score, f1_score
 from amelio_medullo import Calculus, DataCleaning
 import pickle as pkl
 
@@ -29,8 +29,8 @@ def train_and_test_catboost(X, y, rdm_state):
         verbose=100,
     )
 
-    model.fit(X_train, y_train, eval_set=(X_test, y_test), early_stopping_rounds=50)  # stopping if no improvement
-
+    model.fit(X_train, y_train)  # stopping if no improvement
+                        # eval_set=(X_test, y_test)  # Fuite de données possible ici
     feature_imp_df = model.get_feature_importance(prettified=True)
 
     # ── 3. Validation ────────────────────────────────────────────────────────────
@@ -64,15 +64,17 @@ def train_and_test_catboost(X, y, rdm_state):
         "true_values": y_test,
         "shap_values": shap_values,
         "model_fts_imp": feature_imp_df,
+        "f1_score": f1_score(y_test, y_pred),
+        "classif_report": classification_report(y_test, y_pred)
     }
 
 
 def save_dict(results_dict, output_path, separated_sessions=True):
     pickle_file_name = (
         output_path
-        + "/catboost_results_"
+        + "/catboost_results_separated_sessions_is_"
         + str(separated_sessions)
-        + "_selected_features_numerical_100it_with_shap_with_m10MWT.pkl"
+        + "_selected_features_with_no_fuite.pkl"
     )
     with open(pickle_file_name, "wb") as file:
         pkl.dump(results_dict, file)
@@ -93,9 +95,12 @@ def main(data_path, cols_to_keep, random_state_list, output_path, num=True):
     if num == True:
         data["Neurol_cond"] = data["Neurol_cond"].replace(["BM", "AVC", "Autre"], [1, 2, 3])
         data["Sex"] = data["Sex"].replace(["M", "F"], [1, 2])
-        data.apply(DataCleaning.lesion_level_to_num, axis=1)
+    data = data.apply(DataCleaning.lesion_level_to_num, axis=1)
+    if "speed" in data.columns.to_list():
+        data["speed"].replace([np.inf, -np.inf], np.nan, inplace=True)
     X = data[cols_to_keep].copy()
-    X[["10MWT_pas_pre", "10MWT_sec_pre"]].replace([0], ["missing"], inplace=True)
+    if "10MWT_pas_pre" in X.columns.to_list():
+        X[["10MWT_pas_pre", "10MWT_sec_pre"]].replace([np.nan], ["missing"], inplace=True)
     y = Calculus.calculate_MCID(data["6MWT_m_pre"], data["6MWT_m_post"], threshold=45)
     results_dict = {}
     for rdm_state in random_state_list:
@@ -129,4 +134,4 @@ if __name__ == "__main__":
     random_state_list = np.arange(1, 101)
     # random_state_list = np.random.randint(0, 100, size=30)
     output_path = "results/catboost_results"
-    main(data_path, cols_to_keep, random_state_list, output_path)
+    main(data_path, cols_to_keep, random_state_list, num=False, output_path=output_path)
