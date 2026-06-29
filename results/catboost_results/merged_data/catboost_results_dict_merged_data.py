@@ -5,36 +5,38 @@ import shap
 from pathlib import Path
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, roc_curve, auc
-from amelio_medullo import DataCleaning
+from sklearn.calibration import calibration_curve
+from amelio_medullo import DataCleaning, ResultsCalculus
+import time
 
 from pathlib import Path
 
-def save_texte(name, dict, accuracy_mean, accuracy_std, auc_mean=False, auc_std=False):
+def save_text(name, results_dict, accuracy_mean, accuracy_std, auc_mean=None, auc_std=None, ece_mean=None, ece_std=None, mad_ece_mean=None, mad_ece_std=None):
     out_dir = Path("results/catboost_results")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    if auc_mean and auc_std:
-        results_text = f"""
-        Results for: {name}
-        Number of iterations: {len(dict.items())}
-
-        Accuracy:
-        Mean = {accuracy_mean:.3f}
-        Std  = {accuracy_std:.3f}
-
-        AUC:
-        Mean = {auc_mean:.3f}
-        Std  = {auc_std:.3f}
-        """
-    else:
-        results_text = f"""
-        Results for: {name}
-        Number of iterations: {len(dict.items())}
-
-        Accuracy:
-        Mean = {accuracy_mean:.3f}
-        Std  = {accuracy_std:.3f}
-        """
+    results_text = (
+        f"Results for: {name}\n"
+        f"Number of iterations: {len(results_dict)}\n\n"
+        f"Accuracy:\n"
+        f"Mean = {accuracy_mean:.3f}\n"
+        f"Std  = {accuracy_std:.3f}\n"
+    )
+    if auc_mean is not None and auc_std is not None:
+        results_text += (
+            f"\nAUC:\n"
+            f"Mean = {auc_mean:.3f}\n"
+            f"Std  = {auc_std:.3f}\n"
+        )
+    if ece_mean is not None and ece_std is not None:
+        results_text += (
+            f"\nExpected Calibration Error:\n"
+            f"Mean = {ece_mean:.3f}\n"
+            f"Std  = {ece_std:.3f}\n"
+            f"MAD of ECE:\n"
+            f"Mean = {mad_ece_mean:.3f}\n"
+            f"Std  = {mad_ece_std:.3f}\n"
+        )
 
     with open(out_dir / f"{name}_metrics.txt", "w", encoding="utf-8") as f:
         f.write(results_text)
@@ -42,14 +44,15 @@ def save_texte(name, dict, accuracy_mean, accuracy_std, auc_mean=False, auc_std=
 ## ---------- Avec SHAP et sur x itérations ----------
 data_path = 
 data = pd.read_excel(data_path)
-# data["Neurol_cond"] = data["Neurol_cond"].replace(["BM", "AVC", "Autre"], [1, 2, 3])
-# data["Sex"] = data["Sex"].replace(["M", "F"], [1, 2])
-# data.apply(DataCleaning.lesion_level_to_num, axis=1)
+data["Neurol_cond"] = data["Neurol_cond"].replace(["BM", "AVC", "Autre"], [1, 2, 3])
+data["Sex"] = data["Sex"].replace(["M", "F"], [1, 2])
+data = data.apply(DataCleaning.lesion_level_to_num, axis=1)
 
-dict_path_3 = 
+dict_path_3 = "results/catboost_results/profile_data/monte_carlo/catboost_results_all_by_combi.pkl"
 name = Path(dict_path_3).stem
 print('- '*10)
 print(f"Name of tries: {name}")
+print(f"Date: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 print('- '*10)
 with open(dict_path_3, "rb") as file:
     dict_3 = pkl.load(file)
@@ -60,6 +63,8 @@ X = data[cols_to_keep]
 # 1. --- Initialisation ---
 acc_3 = []
 aucs_3 = []
+ece = []
+mad_ece = []
 tprs = []
 mean_fpr = np.linspace(0, 1, 100)
 shap_records, feature_imp_records = [], []
@@ -76,6 +81,8 @@ for rdm_state, res in dict_3.items():
 
     acc_3.append(accuracy_score(y_true, y_pred))
     aucs_3.append(roc_auc)
+    ece.append(ResultsCalculus.expected_calibration_error(y_true, y_proba, n_bins=5, strategy="quantile"))
+    mad_ece.append(np.mean(np.abs(y_proba - np.mean(y_proba))))
 
     # b. --- Calculatin & interpolating for ROC curve ---
     fpr, tpr, thresholds = roc_curve(y_true, y_proba)
@@ -97,7 +104,9 @@ for rdm_state, res in dict_3.items():
 print(f"Results for selected features ({len(dict_3.items())} it.):")
 print(f"Accuracy: {np.mean(acc_3):.3f} ± {np.std(acc_3):.3f}")
 print(f"AUC:      {np.mean(aucs_3):.3f} ± {np.std(aucs_3):.3f}")
-save_texte(name, dict_3, accuracy_mean=np.mean(acc_3), accuracy_std=np.std(acc_3), auc_mean=np.mean(aucs_3), auc_std=np.std(aucs_3))
+print(f"ECE:      {np.mean(ece):.3f} ± {np.std(ece):.3f}")
+print(f"MAD of ECE: {np.mean(mad_ece):.3f} ± {np.std(mad_ece):.3f}")
+save_text(name, dict_3, accuracy_mean=np.mean(acc_3), accuracy_std=np.std(acc_3), auc_mean=np.mean(aucs_3), auc_std=np.std(aucs_3), ece_mean=np.mean(ece), ece_std=np.std(ece), mad_ece_mean=np.mean(mad_ece), mad_ece_std=np.std(mad_ece))
 
 # Concaténer toutes les itérations
 all_shap = pd.concat(shap_records)
@@ -125,7 +134,7 @@ X_test_mean = X.loc[mean_shap_per_patient.index]
 # SHAP visualisations
 # ====================
 # Collecting feature names
-feature_data = pd.read_excel("/Volumes/SP UFD U2/PhD/Stage Nantes/data/datasets/final/feature_names.xlsx")
+feature_data = pd.read_excel("results/french_feature_names.xlsx")
 feature_name_dict = dict(zip(feature_data["features"], feature_data["features_names"]))
 features_names = [feature_name_dict.get(feature, feature) for feature in X_test_mean.columns.to_list()]
 
@@ -169,7 +178,7 @@ plt.close()
 # ==================
 # SHAP by categories
 # ==================
-
+# SHAP by neurological condition
 if "Neurol_cond" in X_test_mean.columns.to_list():
     cond_groups = X_test_mean["Neurol_cond"].map({1: "SCI", 2: "Stroke", 3: "Others"}).to_numpy()
 
@@ -195,12 +204,117 @@ if "Neurol_cond" in X_test_mean.columns.to_list():
     )
     plt.close()
 
+# SHAP by sex
+if "Sex" in X_test_mean.columns.to_list():
+    sex_groups = X_test_mean["Sex"].map({1: "M", 2: "F"}).to_numpy()
+
+    # Safety check
+    assert len(sex_groups) == mean_shap_per_patient.shape[0]
+
+    X_test_mean_copy = X_test_mean.drop(columns=["Sex"], axis=1)
+    mean_shap_per_patient_copy = mean_shap_per_patient.drop(columns=["Sex"], axis=1)
+    feature_name_dict = dict(zip(feature_data["features"], feature_data["features_names"]))
+    features_names_copy = [feature_name_dict.get(feature, feature) for feature in X_test_mean_copy.columns.to_list()]
+
+    # # Create SHAP Explanation object from your averaged SHAP values
+    shap_exp = shap.Explanation(
+        values=mean_shap_per_patient_copy.values, data=X_test_mean_copy.values, feature_names=features_names_copy
+    )
+    plt.close("all")
+    shap.plots.bar(shap_exp.cohorts(sex_groups).abs.mean(0), max_display=len(features_names_copy), show=False)
+    plt.tight_layout()
+    plt.gcf().savefig(
+        f"results/catboost_results/{name}_shap_summary_grouped_by_sex.svg",
+        format="svg",
+        bbox_inches="tight"
+    )
+    plt.close()
+
+    # SHAP beeswarm by sex
+    for sex_label in ["M", "F"]:
+        mask = sex_groups == sex_label
+
+        plt.close("all")
+
+        shap.plots.beeswarm(
+            shap_exp[mask],
+            max_display=len(features_names_copy),
+            show=False,
+        )
+
+        plt.title(f"SHAP beeswarm - Sex = {sex_label}")
+        plt.tight_layout()
+
+        plt.gcf().savefig(
+            f"results/catboost_results/{name}_shap_beeswarm_sex_{sex_label}.svg",
+            format="svg",
+            bbox_inches="tight",
+        )
+
+        plt.close()
+
+# SHAP by functional level
+if "functional_level" in X_test_mean.columns.to_list():
+    func_groups = X_test_mean["functional_level"].map({0: "0", 1: "1", 2: "2", 3: "3", 4: "4", 5: "5"}).to_numpy()
+
+    # Safety check
+    assert len(func_groups) == mean_shap_per_patient.shape[0]
+
+    X_test_mean_copy = X_test_mean.drop(columns=["functional_level"], axis=1)
+    mean_shap_per_patient_copy = mean_shap_per_patient.drop(columns=["functional_level"], axis=1)
+    feature_name_dict = dict(zip(feature_data["features"], feature_data["features_names"]))
+    features_names_copy = [feature_name_dict.get(feature, feature) for feature in X_test_mean_copy.columns.to_list()]
+
+    # # Create SHAP Explanation object from your averaged SHAP values
+    shap_exp = shap.Explanation(
+        values=mean_shap_per_patient_copy.values, data=X_test_mean_copy.values, feature_names=features_names_copy
+    )
+    plt.close("all")
+    shap.plots.bar(shap_exp.cohorts(func_groups).abs.mean(0), max_display=len(features_names_copy), show=False)
+    plt.tight_layout()
+    plt.gcf().savefig(
+        f"results/catboost_results/{name}_shap_summary_grouped_by_func.svg",
+        format="svg",
+        bbox_inches="tight"
+    )
+    plt.close()
+
+# SHAP by time after injury
+if "delay_injury" in X_test_mean.columns.to_list():
+    delay_groups = pd.cut(
+        X_test_mean["delay_injury"],
+        bins=[0, 7, 180, np.inf],
+        labels=["acute", "sub-acute", "chronic"]
+        ).astype(str)
+    delay_groups = delay_groups.to_numpy()
+
+    # Safety check
+    assert len(delay_groups) == mean_shap_per_patient.shape[0]
+
+    X_test_mean_copy = X_test_mean.drop(columns=["delay_injury"], axis=1)
+    mean_shap_per_patient_copy = mean_shap_per_patient.drop(columns=["delay_injury"], axis=1)
+    feature_name_dict = dict(zip(feature_data["features"], feature_data["features_names"]))
+    features_names_copy = [feature_name_dict.get(feature, feature) for feature in X_test_mean_copy.columns.to_list()]
+
+    # # Create SHAP Explanation object from your averaged SHAP values
+    shap_exp = shap.Explanation(
+        values=mean_shap_per_patient_copy.values, data=X_test_mean_copy.values, feature_names=features_names_copy
+    )
+    plt.close("all")
+    shap.plots.bar(shap_exp.cohorts(delay_groups).abs.mean(0), max_display=len(features_names_copy), show=False)
+    plt.tight_layout()
+    plt.gcf().savefig(
+        f"results/catboost_results/{name}_shap_summary_grouped_by_delay.svg",
+        format="svg",
+        bbox_inches="tight"
+    )
+    plt.close()
+
 # ====================================================
 # Feature importance from Catboost model visualisation
 # ====================================================
 original_features = mean_feature_imp.index.to_list()
 
-# Noms jolis dans le même ordre
 pretty_feature_names = [
     feature_name_dict.get(feature, feature)
     for feature in original_features
