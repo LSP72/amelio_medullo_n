@@ -32,7 +32,7 @@ def train_and_test_catboost(X, y, rdm_state):
     )
 
     model.fit(X_train, y_train)  # stopping if no improvement
-                        # eval_set=(X_test, y_test)  # Fuite de données possible ici
+    # eval_set=(X_test, y_test)  # Fuite de données possible ici
     feature_imp_df = model.get_feature_importance(prettified=True)
 
     # ── 3. Evaluation ────────────────────────────────────────────────────────────
@@ -67,14 +67,14 @@ def train_and_test_catboost(X, y, rdm_state):
         "shap_values": shap_values,
         "model_fts_imp": feature_imp_df,
         "f1_score": f1_score(y_test, y_pred),
-        "classif_report": classification_report(y_test, y_pred)
+        "classif_report": classification_report(y_test, y_pred),
     }
 
 
 def save_dict(results_dict, output_path, separated_sessions=True):
     pickle_file_name = (
         output_path
-        + "/monte_carlo/catboost_results_separated_sessions_Neurol_cond_Lesion_num_Nb_sessions_Sex_BMI_6MWT_m_pre_delay_injury_functional_level_speed"
+        + "/monte_carlo/catboost_results_separated_sessions_wout_delay_injury"
         + "_selected_features_by_combi.pkl"
     )
     with open(pickle_file_name, "wb") as file:
@@ -117,31 +117,31 @@ if __name__ == "__main__":
     # "functional_level",	"Artic_hip_flex",	"Artic_hip_ext",	"Artic_hip_add",	"Artic_hip_abd",	"Artic_hip_rot_ext",	"Artic_hip_rot_int",	"Knee_flex",
     # "Knee_ext",	"Ank_flex_90",	"Ank_flex_180",	"Ank_ext",	"H_Flex_ass",	"H_Ext_PP",	"H_abd",	"H_add",	"H_rot_int",	"K_Flex",	"K_Ext",	"A_Dorsiflex_GT",	"A_Plantarflex"]
     # cols_to_keep = ['Neurol_cond', 'Lesion_num', 'Nb sessions', 'Sex', 'Age', 'Height', 'Weight', '6MWT_m_pre', '10MWT_pas_pre', '10MWT_sec_pre', 'delay_injury', 'delay_loko', 'functional_level']
-    # cols_to_keep = [
-    #     "Neurol_cond",
-    #     "Lesion_num",
-    #     "Nb sessions",
-    #     "Sex",
-    #     "Age",
-    #     "BMI",
-    #     "6MWT_m_pre",
-    #     # "10MWT_pas_pre",
-    #     # "10MWT_sec_pre",
-    #     "delay_injury",
-    #     "delay_loko",
-    #     "functional_level",
-    #     "speed"
-    # ]
-    cols_to_keep = ["Neurol_cond",
+    cols_to_keep = [
+        "Neurol_cond",
         "Lesion_num",
         "Nb sessions",
         "Sex",
+        "Age",
         "BMI",
         "6MWT_m_pre",
-        "delay_injury",
+        # "10MWT_pas_pre",
+        # "10MWT_sec_pre",
+        # "delay_injury",
+        "delay_loko",
         "functional_level",
         "speed",
     ]
+    # cols_to_keep = ["Neurol_cond",
+    #     "Lesion_num",
+    #     "Nb sessions",
+    #     "Sex",
+    #     "BMI",
+    #     "6MWT_m_pre",
+    #     "delay_injury",
+    #     "functional_level",
+    #     "speed",
+    # ]
     # cols_to_keep = ['Neurol_cond', 'Sex', 'Age', 'BMI', '6MWT_m_pre', '10MWT_pas_pre', '10MWT_sec_pre', 'delay_injury', 'delay_loko', 'functional_level', 'Artic_hip_flex', 'Artic_hip_abd', 'Ank_flex_90', 'Ank_flex_180', 'H_abd', 'Lesion_num']
     # random_state_list = [42, 72]
     random_state_list = np.arange(1, 101)

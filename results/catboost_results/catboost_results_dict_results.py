@@ -22,10 +22,10 @@ import shap
 from sklearn.metrics import accuracy_score, roc_curve
 from amelio_medullo import DataCleaning, ResultsCalculus
 
-
 # ============================================================
 # 1. Data loading
 # ============================================================
+
 
 def load_data(data_path):
     data = pd.read_excel(data_path)
@@ -52,6 +52,7 @@ def load_feature_name_map(feature_names_path):
 # 2. Metric aggregation across Monte-Carlo iterations
 # ============================================================
 
+
 def aggregate_metrics(results_dict, mean_fpr=None):
     """Collect accuracy, AUC, ECE, probability dispersion, and ROC curves
     across all iterations. Returns a dict of arrays/lists plus interpolated TPRs.
@@ -68,11 +69,7 @@ def aggregate_metrics(results_dict, mean_fpr=None):
 
         acc.append(accuracy_score(y_true, y_pred))
         aucs.append(res["auc_test"])
-        ece.append(
-            ResultsCalculus.expected_calibration_error(
-                y_true, y_proba, n_bins=5, strategy="quantile"
-            )
-        )
+        ece.append(ResultsCalculus.expected_calibration_error(y_true, y_proba, n_bins=5, strategy="quantile"))
         # NOTE: this is mean absolute deviation of predicted probabilities
         # around their own mean — a confidence-dispersion metric, NOT an
         # error metric on ECE itself. Renamed from "mad_ece" to avoid
@@ -125,6 +122,7 @@ def save_metrics_text(name, n_iterations, metrics, out_dir="results/catboost_res
 # 3. SHAP aggregation
 # ============================================================
 
+
 def aggregate_shap(results_dict, cols_to_keep):
     shap_records, feature_imp_records = [], []
 
@@ -132,11 +130,7 @@ def aggregate_shap(results_dict, cols_to_keep):
         df_shap = pd.DataFrame(res["shap_values"], index=res["index_test"], columns=cols_to_keep)
         shap_records.append(df_shap)
 
-        feature_imp_df = (
-            res["model_fts_imp"]
-            .set_index("Feature Id")
-            .rename(columns={"Importances": rdm_state})
-        )
+        feature_imp_df = res["model_fts_imp"].set_index("Feature Id").rename(columns={"Importances": rdm_state})
         feature_imp_records.append(feature_imp_df)
 
     all_shap = pd.concat(shap_records)
@@ -182,6 +176,7 @@ def print_shap_summary(shap_agg):
 # ============================================================
 # 4. Plotting helpers
 # ============================================================
+
 
 def _savefig(fig_or_none, path):
     plt.tight_layout()
@@ -238,17 +233,15 @@ def plot_shap_by_cohort(
     else:
         groups = X_test_mean[group_col].map(group_label_map).to_numpy()
 
-    assert len(groups) == mean_shap_per_patient.shape[0], (
-        f"Group length mismatch for '{group_col}': {len(groups)} vs {mean_shap_per_patient.shape[0]}"
-    )
+    assert (
+        len(groups) == mean_shap_per_patient.shape[0]
+    ), f"Group length mismatch for '{group_col}': {len(groups)} vs {mean_shap_per_patient.shape[0]}"
 
     X_sub = X_test_mean.drop(columns=[group_col])
     shap_sub = mean_shap_per_patient.drop(columns=[group_col])
     feature_names = [feature_name_dict.get(f, f) for f in X_sub.columns]
 
-    shap_exp = shap.Explanation(
-        values=shap_sub.values, data=X_sub.values, feature_names=feature_names
-    )
+    shap_exp = shap.Explanation(values=shap_sub.values, data=X_sub.values, feature_names=feature_names)
 
     plt.close("all")
     shap.plots.bar(shap_exp.cohorts(groups).abs.mean(0), max_display=len(feature_names), show=False)
@@ -282,8 +275,15 @@ def plot_feature_importance_bar(mean_feature_imp, std_feature_imp, feature_name_
     for i, (feature, mean_val) in enumerate(mean_feature_imp.items()):
         std_val = std_feature_imp[feature]
         margin = 0.02 * mean_feature_imp.max()
-        ax.text(mean_val + std_val + margin, i, f"{mean_val:.2f} ± {std_val:.2f}",
-                va="center", ha="left", fontsize=9, color="black")
+        ax.text(
+            mean_val + std_val + margin,
+            i,
+            f"{mean_val:.2f} ± {std_val:.2f}",
+            va="center",
+            ha="left",
+            fontsize=9,
+            color="black",
+        )
 
     ax.set_yticks(y_pos)
     ax.set_yticklabels(pretty_names)
@@ -304,8 +304,13 @@ def plot_mean_roc(metrics, name, out_dir):
     std_tpr = metrics["tprs"].std(axis=0)
 
     fig, ax = plt.subplots(figsize=(8, 6))
-    ax.plot(mean_fpr, mean_tpr, color="blue", lw=2,
-            label=f"Mean ROC (AUC = {metrics['auc'].mean():.2f} ± {metrics['auc'].std():.2f})")
+    ax.plot(
+        mean_fpr,
+        mean_tpr,
+        color="blue",
+        lw=2,
+        label=f"Mean ROC (AUC = {metrics['auc'].mean():.2f} ± {metrics['auc'].std():.2f})",
+    )
 
     tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
     tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
@@ -325,6 +330,7 @@ def plot_mean_roc(metrics, name, out_dir):
 # ============================================================
 # 5. Orchestration
 # ============================================================
+
 
 def run_pipeline(data_path, dict_path, feature_names_path, out_dir="results/catboost_results"):
     out_dir = Path(out_dir)
@@ -371,14 +377,24 @@ def run_pipeline(data_path, dict_path, feature_names_path, out_dir="results/catb
     ]
     for group_col, label_map, do_beeswarm in cohort_specs:
         plot_shap_by_cohort(
-            X_test_mean, shap_agg["mean_shap_per_patient"], group_col, label_map,
-            feature_name_dict, name, out_dir, beeswarm_per_group=do_beeswarm,
+            X_test_mean,
+            shap_agg["mean_shap_per_patient"],
+            group_col,
+            label_map,
+            feature_name_dict,
+            name,
+            out_dir,
+            beeswarm_per_group=do_beeswarm,
         )
 
     # --- feature importance + ROC ---
     plot_feature_importance_bar(
-        shap_agg["mean_feature_imp"], shap_agg["std_feature_imp"], feature_name_dict,
-        name, len(results_dict), out_dir,
+        shap_agg["mean_feature_imp"],
+        shap_agg["std_feature_imp"],
+        feature_name_dict,
+        name,
+        len(results_dict),
+        out_dir,
     )
     plot_mean_roc(metrics, name, out_dir)
 
@@ -396,7 +412,7 @@ if __name__ == "__main__":
         "Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/"
         "CHUNantes collaboration/donnees/data_from_dpi/final_data_matrix_sessions_separated.xlsx"
     )
-    DICT_PATH = "results/catboost_results/profile_data/with_no_fuite_selected_features_wout_0.7_correlated/catboost_results_separated_sessions_Neurol_cond_Lesion_num_Nb_sessions_Sex_BMI_6MWT_m_pre_delay_injury_functional_level_speed_selected_features_by_combi.pkl"
+    DICT_PATH = "results/catboost_results/profile_data/catboost_results_wout_delay_injury_selected_features_by_combi/catboost_results_separated_sessions_wout_delay_injury_selected_features_by_combi.pkl"
     FEATURE_NAMES_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/others/feature_names.xlsx"
 
     run_pipeline(DATA_PATH, DICT_PATH, FEATURE_NAMES_PATH)

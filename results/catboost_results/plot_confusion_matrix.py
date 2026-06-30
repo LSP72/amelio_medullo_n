@@ -30,14 +30,15 @@ def matrices_confusion(results, labels=(0, 1), normalize=None):
             cm = np.divide(cm, row_sums, out=np.zeros_like(cm), where=row_sums != 0)
         cms.append(cm)
 
-    cms = np.array(cms)              # forme (n_iter, n_classes, n_classes)
+    cms = np.array(cms)  # forme (n_iter, n_classes, n_classes)
     mean_cm = cms.mean(axis=0)
     std_cm = cms.std(axis=0, ddof=1)  # ddof=1 = écart-type d'échantillon
     return mean_cm, std_cm
 
 
 def plot_matrice_confusion_moyenne(
-    mean_cm, std_cm,
+    mean_cm,
+    std_cm,
     class_names=("Non-Responders", "Responders"),
     normalize=None,
     cmap="viridis",
@@ -54,9 +55,12 @@ def plot_matrice_confusion_moyenne(
         title = f"Confusion Matrix (Mean ± Std Dev) {suffixe}"
 
     ax.set(
-        xticks=np.arange(n), yticks=np.arange(n),
-        xticklabels=class_names, yticklabels=class_names,
-        xlabel="Predicted Value", ylabel="True Value",
+        xticks=np.arange(n),
+        yticks=np.arange(n),
+        xticklabels=class_names,
+        yticklabels=class_names,
+        xlabel="Predicted Value",
+        ylabel="True Value",
         title=title,
     )
     plt.setp(ax.get_yticklabels(), rotation=90, va="center")
@@ -66,13 +70,17 @@ def plot_matrice_confusion_moyenne(
     for i in range(n):
         for j in range(n):
             ax.text(
-                j, i, f"{mean_cm[i, j]:{fmt}} ± {std_cm[i, j]:{fmt}}",
-                ha="center", va="center",
-                color="white" if mean_cm[i, j] > seuil else "black"
+                j,
+                i,
+                f"{mean_cm[i, j]:{fmt}} ± {std_cm[i, j]:{fmt}}",
+                ha="center",
+                va="center",
+                color="white" if mean_cm[i, j] > seuil else "black",
             )
 
     fig.tight_layout()
     return fig, ax
+
 
 def main(results):
     # Comptages bruts (ce que tu as demandé) :
@@ -84,7 +92,6 @@ def main(results):
     # mean_cm, std_cm = matrices_confusion(results, labels=(0, 1), normalize="true")
     # plot_matrice_confusion_moyenne(mean_cm, std_cm, normalize="true")
     # plt.show()
-    
 
 
 if __name__ == "__main__":

@@ -176,9 +176,7 @@ def plot_results_table(results_df, output_path):
 
     ax.set_title("Comparaison des modèles ML — Validation croisée 10-fold", fontsize=13, fontweight="bold", pad=20)
     plt.tight_layout()
-    plt.savefig(
-        f"{output_path}/results_table_5_selected_feature_after_lasso.png", dpi=150, bbox_inches="tight"
-    )
+    plt.savefig(f"{output_path}/results_table_5_selected_feature_after_lasso.png", dpi=150, bbox_inches="tight")
     plt.close()
     print("📊 Tableau des résultats sauvegardé.")
 

@@ -11,9 +11,7 @@ import pickle as pkl
 
 def train_single_split(X, y, rdm_state):
     cat_features = [col for col in X.columns if X[col].dtype == "object"]
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=rdm_state, stratify=y
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=rdm_state, stratify=y)
     X_train = X_train.copy()
     X_test = X_test.copy()
     X_train[cat_features] = X_train[cat_features].fillna("missing").astype(str)
@@ -51,10 +49,9 @@ def evaluate_feature_set(X, y, feature_combo, random_state_list):
     return np.mean(aucs), np.std(aucs), np.mean(f1s), np.std(f1s), np.mean(accs), np.std(accs)
 
 
-def search_all_feature_combinations(data_path, all_cols, output_path,
-                                     random_state_list,
-                                     min_features=2, max_features=6,
-                                     num=False):
+def search_all_feature_combinations(
+    data_path, all_cols, output_path, random_state_list, min_features=2, max_features=6, num=False
+):
     data = pd.read_excel(data_path)
     if num:
         data["Neurol_cond"] = data["Neurol_cond"].replace(["BM", "AVC", "Autre"], [1, 2, 3])
@@ -73,17 +70,21 @@ def search_all_feature_combinations(data_path, all_cols, output_path,
             if i % 10 == 0:
                 print(f"* Testing combination number {i}. *")
             mean_auc, std_auc, mean_f1, std_f1, mean_acc, std_acc = evaluate_feature_set(X, y, combo, random_state_list)
-            results.append({
-                "features": list(combo),
-                "n_features": size,
-                "mean_auc": mean_auc,
-                "std_auc": std_auc,
-                "mean_f1": mean_f1,
-                "std_f1": std_f1,
-                "mean_accuracy": mean_acc,
-                "std_accuracy": std_acc
-            })
-            print(f"[{size} features] {list(combo)} → AUC={mean_auc:.4f} ± {std_auc:.4f} | F1={mean_f1:.4f} ± {std_f1:.4f} | Acc={mean_acc:.4f} ± {std_acc:.4f}")
+            results.append(
+                {
+                    "features": list(combo),
+                    "n_features": size,
+                    "mean_auc": mean_auc,
+                    "std_auc": std_auc,
+                    "mean_f1": mean_f1,
+                    "std_f1": std_f1,
+                    "mean_accuracy": mean_acc,
+                    "std_accuracy": std_acc,
+                }
+            )
+            print(
+                f"[{size} features] {list(combo)} → AUC={mean_auc:.4f} ± {std_auc:.4f} | F1={mean_f1:.4f} ± {std_f1:.4f} | Acc={mean_acc:.4f} ± {std_acc:.4f}"
+            )
 
     results_df = pd.DataFrame(results).sort_values("mean_auc", ascending=False)
 
@@ -98,10 +99,22 @@ if __name__ == "__main__":
     data_path = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/merged_data_final.xlsx"
 
     all_cols = [
-        "nb_sessions", "duration", "Durée_min", "Vitesse_kmh_MOY",
-        "BWS_%_MOY", "cadence", "step_length", "Guidage_%_MOY",
-        "sessions_per_week", "Neurol_cond", "Sex", "Age",
-        "Nb sessions", "functional_level", "Lesion_num", "BMI",
+        "nb_sessions",
+        "duration",
+        "Durée_min",
+        "Vitesse_kmh_MOY",
+        "BWS_%_MOY",
+        "cadence",
+        "step_length",
+        "Guidage_%_MOY",
+        "sessions_per_week",
+        "Neurol_cond",
+        "Sex",
+        "Age",
+        "Nb sessions",
+        "functional_level",
+        "Lesion_num",
+        "BMI",
     ]
 
     random_state_list = np.arange(1, 21)  # start with 20 splits, not 100 — much faster
@@ -112,7 +125,7 @@ if __name__ == "__main__":
         all_cols=all_cols,
         output_path=output_path,
         random_state_list=random_state_list,
-        min_features=5,
-        max_features=len(all_cols),  # increase once you've validated the approach
+        min_features=9,
+        max_features=10,  # increase once you've validated the approach
         num=False,
     )

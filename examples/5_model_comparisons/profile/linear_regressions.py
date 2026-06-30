@@ -63,13 +63,12 @@ def train_and_test(X, y, rdm_state):
         "auc_test": auc_test,
         "true_values": y_test,
         "shap_values": shap_values,
-        "model_fts_imp": feature_imp_df
+        "model_fts_imp": feature_imp_df,
     }
 
 
 def save_dict(results_dict, output_path, num):
-    pickle_file_name = (f"{output_path}/catboost_results_merged_data_selected_features_perso_removed_numerical_is_{num}_100it_with_shap_corr_removed.pkl"
-    )
+    pickle_file_name = f"{output_path}/catboost_results_merged_data_selected_features_perso_removed_numerical_is_{num}_100it_with_shap_corr_removed.pkl"
     with open(pickle_file_name, "wb") as file:
         pkl.dump(results_dict, file)
 

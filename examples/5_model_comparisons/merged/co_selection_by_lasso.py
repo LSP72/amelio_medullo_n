@@ -11,51 +11,52 @@ from collections import Counter
 from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.preprocessing import StandardScaler
 
+
 def lasso_pipeline_one_split(X, y, random_state=42, cv=5, test_size=0.2):
     """
     Un seul split train/test avec pipeline complet :
     KNNImputer → StandardScaler → LogisticRegressionCV (L1)
-    
+
     Returns:
         selected_features (list)
         coefs (pd.Series)
         test_accuracy (float)
     """
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y,
-        test_size=test_size,
-        random_state=random_state,
-        stratify=y  # important avec dataset petit + binaire
+        X, y, test_size=test_size, random_state=random_state, stratify=y  # important avec dataset petit + binaire
     )
 
-    pipeline = Pipeline([
-        ("imputer", KNNImputer(n_neighbors=5)),
-        ("scaler", StandardScaler()),
-        ("lasso", LogisticRegressionCV(
-            penalty='l1',
-            solver='liblinear',
-            Cs=np.logspace(-3, 1, 50),  # cherche le meilleur C
-            cv=StratifiedKFold(n_splits=cv, shuffle=True, random_state=random_state),
-            max_iter=10000,
-            scoring='roc_auc'
-        ))
-    ])
+    pipeline = Pipeline(
+        [
+            ("imputer", KNNImputer(n_neighbors=5)),
+            ("scaler", StandardScaler()),
+            (
+                "lasso",
+                LogisticRegressionCV(
+                    penalty="l1",
+                    solver="liblinear",
+                    Cs=np.logspace(-3, 1, 50),  # cherche le meilleur C
+                    cv=StratifiedKFold(n_splits=cv, shuffle=True, random_state=random_state),
+                    max_iter=10000,
+                    scoring="roc_auc",
+                ),
+            ),
+        ]
+    )
 
     pipeline.fit(X_train, y_train)
 
-    coefs = pd.Series(
-        pipeline.named_steps["lasso"].coef_[0],
-        index=X.columns
-    )
+    coefs = pd.Series(pipeline.named_steps["lasso"].coef_[0], index=X.columns)
     selected_features = coefs[coefs != 0].sort_values(key=abs, ascending=False).index.tolist()
     test_acc = pipeline.score(X_test, y_test)
 
     return selected_features, coefs, test_acc
 
+
 def co_selection_analysis(X, y, n_iterations=100, threshold=0.5):
     """
     Analyse la co-sélection des features sur n_iterations splits.
-    
+
     Returns:
         co_matrix : fréquence de co-sélection (en %) pour chaque paire
         selection_per_split : liste des sets de features sélectionnées par split
@@ -73,11 +74,9 @@ def co_selection_analysis(X, y, n_iterations=100, threshold=0.5):
             co_counts[pair] += 1
 
     # Fréquence individuelle
-    freq_df = pd.DataFrame.from_dict(
-        selection_counts, orient='index', columns=['count']
-    )
-    freq_df['frequency_%'] = (freq_df['count'] / n_iterations * 100).round(1)
-    freq_df = freq_df.sort_values('frequency_%', ascending=False)
+    freq_df = pd.DataFrame.from_dict(selection_counts, orient="index", columns=["count"])
+    freq_df["frequency_%"] = (freq_df["count"] / n_iterations * 100).round(1)
+    freq_df = freq_df.sort_values("frequency_%", ascending=False)
 
     # Matrice de co-sélection (en %)
     features = X.columns.tolist()
@@ -105,38 +104,33 @@ def plot_co_selection(co_matrix, freq_df, threshold=50):
         co_matrix,
         ax=axes[0],
         annot=True,
-        fmt='.0f',
-        cmap='YlOrRd',
+        fmt=".0f",
+        cmap="YlOrRd",
         mask=mask,
-        vmin=0, vmax=100,
+        vmin=0,
+        vmax=100,
         linewidths=0.5,
-        cbar_kws={'label': 'Co-sélection (%)'}
+        cbar_kws={"label": "Co-sélection (%)"},
     )
-    axes[0].set_title('Fréquence de co-sélection (%)\nsur 100 splits', fontsize=13)
-    axes[0].tick_params(axis='x', rotation=90)
-    axes[0].tick_params(axis='y', rotation=0)
+    axes[0].set_title("Fréquence de co-sélection (%)\nsur 100 splits", fontsize=13)
+    axes[0].tick_params(axis="x", rotation=90)
+    axes[0].tick_params(axis="y", rotation=0)
 
     # --- Plot 2 : Barplot fréquences individuelles ---
-    colors = ['#2ecc71' if f >= threshold else '#e74c3c' 
-              for f in freq_df['frequency_%']]
-    axes[1].barh(
-        freq_df.index,
-        freq_df['frequency_%'],
-        color=colors
-    )
-    axes[1].axvline(x=threshold, color='black', linestyle='--', 
-                    linewidth=1.5, label=f'Seuil {threshold}%')
-    axes[1].set_xlabel('Fréquence de sélection (%)')
-    axes[1].set_title('Stabilité individuelle\nde chaque feature', fontsize=13)
+    colors = ["#2ecc71" if f >= threshold else "#e74c3c" for f in freq_df["frequency_%"]]
+    axes[1].barh(freq_df.index, freq_df["frequency_%"], color=colors)
+    axes[1].axvline(x=threshold, color="black", linestyle="--", linewidth=1.5, label=f"Seuil {threshold}%")
+    axes[1].set_xlabel("Fréquence de sélection (%)")
+    axes[1].set_title("Stabilité individuelle\nde chaque feature", fontsize=13)
     axes[1].legend()
     axes[1].invert_yaxis()
 
     plt.tight_layout()
-    plt.savefig('co_selection_analysis.png', dpi=150, bbox_inches='tight')
+    plt.savefig("co_selection_analysis.png", dpi=150, bbox_inches="tight")
     plt.show()
 
 
-def cadence_bws_conditional_analysis(selection_per_split, feature_a='cadence', feature_b='BWS_%_MOY'):
+def cadence_bws_conditional_analysis(selection_per_split, feature_a="cadence", feature_b="BWS_%_MOY"):
     """
     Analyse conditionnelle : dans quels splits cadence apparaît-elle ?
     Est-ce corrélé avec la présence/absence de BWS ?
@@ -193,10 +187,8 @@ def main(data_path, cols_to_keep):
     plot_co_selection(co_matrix, freq_df, threshold=70)
 
     # Analyse spécifique cadence vs BWS
-    cadence_bws_conditional_analysis(selection_per_split, 
-                                      feature_a='cadence', 
-                                      feature_b='BWS_%_MOY')
-    
+    cadence_bws_conditional_analysis(selection_per_split, feature_a="cadence", feature_b="BWS_%_MOY")
+
 
 if __name__ == "__main__":
     data_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/data/datasets/final/merged_data_final.xlsx"
@@ -235,7 +227,7 @@ if __name__ == "__main__":
         "functional_level",
         # "Lesion_num", # 5 missing
         # "BMI", # 7 missing
-        "cadence"
+        "cadence",
     ]
     random_state_list = [42]
     # random_state_list = np.arange(1, 101)

@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from amelio_medullo import DataCleaning, Calculus
 import datetime
 
+
 def load_data(data_path, cols_to_keep):
     data = pd.read_excel(data_path)
     data["Neurol_cond"] = data["Neurol_cond"].replace(["BM", "AVC", "Autre"], [1, 2, 3])
@@ -14,12 +15,13 @@ def load_data(data_path, cols_to_keep):
     data.apply(DataCleaning.lesion_level_to_num, axis=1)
     X = data[cols_to_keep]
     y = Calculus.calculate_MCID_2(data, 45)
-    X['MCID'] = y['MCID_classes']
+    X["MCID"] = y["MCID_classes"]
     # Drops rows where the target or the specific feature is missing
     clean_X = X.dropna(axis=0)
     print(f"Number of participants included: {len(X)}")
 
     return clean_X.drop(columns=["MCID"], axis=1), clean_X[["MCID"]]
+
 
 def simple_stats(data, y, feature):
     group0 = data[y["MCID"] == 0][feature]
@@ -28,20 +30,20 @@ def simple_stats(data, y, feature):
 
 
 def main(data_path, cols_to_keep):
-    print('*'*10)
+    print("*" * 10)
     print(datetime.datetime.now())
-    
+
     results = []
     X, y = load_data(data_path, cols_to_keep)
     X_log = np.log1p(X)
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X_log)
     X_scaled = pd.DataFrame(X_scaled, columns=X.columns, index=X.index)
-    
+
     for col in cols_to_keep:
         # 1. Prepare data
         X_sm = sm.add_constant(X_scaled[col])
-        
+
         # 2. Fit Logistic Regression to get P-Value and Odds Ratio
         try:
             model = sm.Logit(y, X_sm).fit(disp=0)
@@ -52,20 +54,16 @@ def main(data_path, cols_to_keep):
         except:
             # Handles cases where the model fails to converge
             p_val, odds_ratio, auc = np.nan, np.nan, np.nan
-        
+
         _, mw_p = simple_stats(data=X, y=y, feature=col)
-        
-        results.append({
-            'Biomarker': col,
-            'AUC': auc,
-            'Logit_P_Value': p_val,
-            'MW_U_P_Value': mw_p,
-            'Odds_Ratio': odds_ratio
-        })
-        print('\n'+'* '*10)
-        print(f'Biomarker: {col}\nAUC: {auc}\nLogit_P_Value: {p_val}\nMW_U_P_Value: {mw_p}\nOdds_Ratio: {odds_ratio}')
-    
-    univariate_df = pd.DataFrame(results).sort_values('AUC', ascending=False)
+
+        results.append(
+            {"Biomarker": col, "AUC": auc, "Logit_P_Value": p_val, "MW_U_P_Value": mw_p, "Odds_Ratio": odds_ratio}
+        )
+        print("\n" + "* " * 10)
+        print(f"Biomarker: {col}\nAUC: {auc}\nLogit_P_Value: {p_val}\nMW_U_P_Value: {mw_p}\nOdds_Ratio: {odds_ratio}")
+
+    univariate_df = pd.DataFrame(results).sort_values("AUC", ascending=False)
     print(univariate_df.to_markdown())
     univariate_df.to_excel("results/uni_multi_variate/univariate_results_merged_dataset.xlsx")
 

@@ -123,7 +123,12 @@ if __name__ == "__main__":
     # cont_cols = ["Age", "Height", "Weight", "BMI"]
     # cat_cols = ["Sex", "functional_level", "Neurol_cond", "Lesion_num", "MCID_classes"]
     # cols for merged dataset
-    cont_cols = ["Age", "Height", "Weight", "BMI",  "nb_sessions",
+    cont_cols = [
+        "Age",
+        "Height",
+        "Weight",
+        "BMI",
+        "nb_sessions",
         "duration",
         "Durée_min",
         "Vitesse_kmh_MOY",
@@ -131,9 +136,10 @@ if __name__ == "__main__":
         "step_length",
         "Guidage_%_MOY",
         "sessions_per_week",
-        "Nb sessions",]
+        "Nb sessions",
+    ]
     cat_cols = ["Sex", "functional_level", "Neurol_cond", "Lesion_num", "MCID_classes"]
-    
+
     data_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/data/datasets/final/merged_data_final.xlsx"
     output_path = "results/stats"
     main(data_path, cont_cols, cat_cols, output_path)

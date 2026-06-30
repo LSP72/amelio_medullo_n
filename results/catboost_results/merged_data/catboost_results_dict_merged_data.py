@@ -11,7 +11,19 @@ import time
 
 from pathlib import Path
 
-def save_text(name, results_dict, accuracy_mean, accuracy_std, auc_mean=None, auc_std=None, ece_mean=None, ece_std=None, mad_ece_mean=None, mad_ece_std=None):
+
+def save_text(
+    name,
+    results_dict,
+    accuracy_mean,
+    accuracy_std,
+    auc_mean=None,
+    auc_std=None,
+    ece_mean=None,
+    ece_std=None,
+    mad_ece_mean=None,
+    mad_ece_std=None,
+):
     out_dir = Path("results/catboost_results")
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -23,11 +35,7 @@ def save_text(name, results_dict, accuracy_mean, accuracy_std, auc_mean=None, au
         f"Std  = {accuracy_std:.3f}\n"
     )
     if auc_mean is not None and auc_std is not None:
-        results_text += (
-            f"\nAUC:\n"
-            f"Mean = {auc_mean:.3f}\n"
-            f"Std  = {auc_std:.3f}\n"
-        )
+        results_text += f"\nAUC:\n" f"Mean = {auc_mean:.3f}\n" f"Std  = {auc_std:.3f}\n"
     if ece_mean is not None and ece_std is not None:
         results_text += (
             f"\nExpected Calibration Error:\n"
@@ -41,8 +49,10 @@ def save_text(name, results_dict, accuracy_mean, accuracy_std, auc_mean=None, au
     with open(out_dir / f"{name}_metrics.txt", "w", encoding="utf-8") as f:
         f.write(results_text)
 
+
 ## ---------- Avec SHAP et sur x itérations ----------
-data_path = 
+data_path = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/final_data_matrix_sessions_separated.xlsx"
+# data_path = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/merged_data_final.xlsx"
 data = pd.read_excel(data_path)
 data["Neurol_cond"] = data["Neurol_cond"].replace(["BM", "AVC", "Autre"], [1, 2, 3])
 data["Sex"] = data["Sex"].replace(["M", "F"], [1, 2])
@@ -50,10 +60,10 @@ data = data.apply(DataCleaning.lesion_level_to_num, axis=1)
 
 dict_path_3 = "results/catboost_results/profile_data/monte_carlo/catboost_results_all_by_combi.pkl"
 name = Path(dict_path_3).stem
-print('- '*10)
+print("- " * 10)
 print(f"Name of tries: {name}")
 print(f"Date: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-print('- '*10)
+print("- " * 10)
 with open(dict_path_3, "rb") as file:
     dict_3 = pkl.load(file)
 first_key = next(iter(dict_3))
@@ -106,14 +116,24 @@ print(f"Accuracy: {np.mean(acc_3):.3f} ± {np.std(acc_3):.3f}")
 print(f"AUC:      {np.mean(aucs_3):.3f} ± {np.std(aucs_3):.3f}")
 print(f"ECE:      {np.mean(ece):.3f} ± {np.std(ece):.3f}")
 print(f"MAD of ECE: {np.mean(mad_ece):.3f} ± {np.std(mad_ece):.3f}")
-save_text(name, dict_3, accuracy_mean=np.mean(acc_3), accuracy_std=np.std(acc_3), auc_mean=np.mean(aucs_3), auc_std=np.std(aucs_3), ece_mean=np.mean(ece), ece_std=np.std(ece), mad_ece_mean=np.mean(mad_ece), mad_ece_std=np.std(mad_ece))
+save_text(
+    name,
+    dict_3,
+    accuracy_mean=np.mean(acc_3),
+    accuracy_std=np.std(acc_3),
+    auc_mean=np.mean(aucs_3),
+    auc_std=np.std(aucs_3),
+    ece_mean=np.mean(ece),
+    ece_std=np.std(ece),
+    mad_ece_mean=np.mean(mad_ece),
+    mad_ece_std=np.std(mad_ece),
+)
 
 # Concaténer toutes les itérations
 all_shap = pd.concat(shap_records)
 all_feature_imp = pd.concat(feature_imp_records, axis=1)
 
 # Moyenne des valeurs SHAP pour chaque patient (sur toutes les fois où il était dans X_test)
-mean_shap_per_patient = all_shap.groupby(all_shap.index).mean()
 mean_shap_per_patient = all_shap.groupby(all_shap.index).mean()
 std_shap_per_patient = all_shap.groupby(all_shap.index).std()
 mean_feature_imp = all_feature_imp.mean(axis=1).sort_values(ascending=False)
@@ -123,9 +143,13 @@ std_feature_imp = all_feature_imp.std(axis=1)
 abs_mean_shap_global = mean_shap_per_patient.abs().mean(axis=0).sort_values(key=abs, ascending=False)
 mean_shap_global = mean_shap_per_patient.mean(axis=0).sort_values(key=abs, ascending=False)
 std_shap_global = std_shap_per_patient.mean(axis=0).loc[mean_shap_global.index]
-print(f"Global mean shap values:\n{pd.concat([abs_mean_shap_global, std_shap_global], keys=["Abs means", "StD"], axis=1).to_markdown()}")
+print(
+    f"Global mean shap values:\n{pd.concat([abs_mean_shap_global, std_shap_global], keys=["Abs means", "StD"], axis=1).to_markdown()}"
+)
 
-print(f"Global feature importance values from CB:\n{pd.concat([mean_feature_imp, std_feature_imp], keys=["Means", "StD"], axis=1).to_markdown()}")
+print(
+    f"Global feature importance values from CB:\n{pd.concat([mean_feature_imp, std_feature_imp], keys=["Means", "StD"], axis=1).to_markdown()}"
+)
 
 # Récupérer X correspondant (moyenne des X_test aussi par patient)
 X_test_mean = X.loc[mean_shap_per_patient.index]
@@ -150,11 +174,7 @@ shap.summary_plot(
     show=False,
 )
 plt.tight_layout()
-plt.gcf().savefig(
-    f"results/catboost_results/{name}_shap_bar.svg",
-    format="svg",
-    bbox_inches="tight"
-)
+plt.gcf().savefig(f"results/catboost_results/{name}_shap_bar.svg", format="svg", bbox_inches="tight")
 plt.close()
 
 # --- Summary plot ---
@@ -164,7 +184,7 @@ shap.summary_plot(
     X_test_mean,
     feature_names=features_names,
     title=f"Importance SHAP moyenne ({len(dict_3.items())} itérations)",
-    show=False
+    show=False,
 )
 plt.tight_layout()
 plt.gcf().savefig(
@@ -174,6 +194,7 @@ plt.gcf().savefig(
 )
 plt.close()
 
+# shap.dependence_plot("cadence", mean_shap_per_patient.values, X_test_mean, interaction_index="Vitesse_kmh_MOY")
 
 # ==================
 # SHAP by categories
@@ -198,9 +219,7 @@ if "Neurol_cond" in X_test_mean.columns.to_list():
     shap.plots.bar(shap_exp.cohorts(cond_groups).abs.mean(0), max_display=len(features_names_copy), show=False)
     plt.tight_layout()
     plt.gcf().savefig(
-        f"results/catboost_results/{name}_shap_summary_grouped_by_cond.svg",
-        format="svg",
-        bbox_inches="tight"
+        f"results/catboost_results/{name}_shap_summary_grouped_by_cond.svg", format="svg", bbox_inches="tight"
     )
     plt.close()
 
@@ -224,9 +243,7 @@ if "Sex" in X_test_mean.columns.to_list():
     shap.plots.bar(shap_exp.cohorts(sex_groups).abs.mean(0), max_display=len(features_names_copy), show=False)
     plt.tight_layout()
     plt.gcf().savefig(
-        f"results/catboost_results/{name}_shap_summary_grouped_by_sex.svg",
-        format="svg",
-        bbox_inches="tight"
+        f"results/catboost_results/{name}_shap_summary_grouped_by_sex.svg", format="svg", bbox_inches="tight"
     )
     plt.close()
 
@@ -273,19 +290,15 @@ if "functional_level" in X_test_mean.columns.to_list():
     shap.plots.bar(shap_exp.cohorts(func_groups).abs.mean(0), max_display=len(features_names_copy), show=False)
     plt.tight_layout()
     plt.gcf().savefig(
-        f"results/catboost_results/{name}_shap_summary_grouped_by_func.svg",
-        format="svg",
-        bbox_inches="tight"
+        f"results/catboost_results/{name}_shap_summary_grouped_by_func.svg", format="svg", bbox_inches="tight"
     )
     plt.close()
 
 # SHAP by time after injury
 if "delay_injury" in X_test_mean.columns.to_list():
     delay_groups = pd.cut(
-        X_test_mean["delay_injury"],
-        bins=[0, 7, 180, np.inf],
-        labels=["acute", "sub-acute", "chronic"]
-        ).astype(str)
+        X_test_mean["delay_injury"], bins=[0, 7, 180, np.inf], labels=["acute", "sub-acute", "chronic"]
+    ).astype(str)
     delay_groups = delay_groups.to_numpy()
 
     # Safety check
@@ -304,9 +317,7 @@ if "delay_injury" in X_test_mean.columns.to_list():
     shap.plots.bar(shap_exp.cohorts(delay_groups).abs.mean(0), max_display=len(features_names_copy), show=False)
     plt.tight_layout()
     plt.gcf().savefig(
-        f"results/catboost_results/{name}_shap_summary_grouped_by_delay.svg",
-        format="svg",
-        bbox_inches="tight"
+        f"results/catboost_results/{name}_shap_summary_grouped_by_delay.svg", format="svg", bbox_inches="tight"
     )
     plt.close()
 
@@ -315,10 +326,7 @@ if "delay_injury" in X_test_mean.columns.to_list():
 # ====================================================
 original_features = mean_feature_imp.index.to_list()
 
-pretty_feature_names = [
-    feature_name_dict.get(feature, feature)
-    for feature in original_features
-]
+pretty_feature_names = [feature_name_dict.get(feature, feature) for feature in original_features]
 
 y_pos = np.arange(len(original_features))
 
@@ -391,6 +399,6 @@ ax.set_ylabel("True Positive Rate (TPR)")
 ax.set_title("ROC curve for 100 iterations")
 ax.legend(loc="lower right")
 plt.tight_layout()
-plt.savefig(f'results/catboost_results/{name}_ROC_AUC.svg')
+plt.savefig(f"results/catboost_results/{name}_ROC_AUC.svg")
 plt.show()
 plt.close()

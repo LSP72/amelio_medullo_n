@@ -1,4 +1,3 @@
-
 from sklearn.metrics import roc_auc_score, accuracy_score
 from amelio_medullo import Calculus, DataCleaning
 import numpy as np
@@ -27,9 +26,7 @@ def compare_catboost_vs_xgboost(X, y, n_splits=5, n_repeats=20, random_state=42)
     """
     cat_features = [c for c in X.columns if X[c].dtype == "object"]
 
-    cv = RepeatedStratifiedKFold(
-        n_splits=n_splits, n_repeats=n_repeats, random_state=random_state
-    )
+    cv = RepeatedStratifiedKFold(n_splits=n_splits, n_repeats=n_repeats, random_state=random_state)
 
     acc_cat, acc_xgb = [], []
     auc_cat, auc_xgb = [], []
@@ -44,9 +41,13 @@ def compare_catboost_vs_xgboost(X, y, n_splits=5, n_repeats=20, random_state=42)
             df[cat_features] = df[cat_features].fillna("missing").astype(str)
 
         cb = CatBoostClassifier(
-            iterations=500, depth=4, l2_leaf_reg=5,
-            eval_metric="AUC", cat_features=cat_features,
-            random_seed=42, verbose=0,
+            iterations=500,
+            depth=4,
+            l2_leaf_reg=5,
+            eval_metric="AUC",
+            cat_features=cat_features,
+            random_seed=42,
+            verbose=0,
         )
         cb.fit(X_tr_cb, y_tr)
         acc_cat.append(accuracy_score(y_te, cb.predict(X_te_cb)))
@@ -57,10 +58,15 @@ def compare_catboost_vs_xgboost(X, y, n_splits=5, n_repeats=20, random_state=42)
         X_te_xgb = prepare_xgb_data(X_te, cat_features)
 
         xgb = XGBClassifier(
-            n_estimators=500, max_depth=4, learning_rate=0.05,
-            reg_lambda=5, tree_method="hist",
-            enable_categorical=True, eval_metric="auc",
-            random_state=42, verbosity=0,
+            n_estimators=500,
+            max_depth=4,
+            learning_rate=0.05,
+            reg_lambda=5,
+            tree_method="hist",
+            enable_categorical=True,
+            eval_metric="auc",
+            random_state=42,
+            verbosity=0,
         )
         xgb.fit(X_tr_xgb, y_tr)
         acc_xgb.append(accuracy_score(y_te, xgb.predict(X_te_xgb)))
@@ -121,7 +127,7 @@ if __name__ == "__main__":
         "delay_injury",
         "delay_loko",
         "functional_level",
-        "speed"
+        "speed",
     ]
-    
+
     main(data_path, cols_to_keep, num=False)

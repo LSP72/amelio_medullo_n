@@ -26,9 +26,7 @@ def train_and_test_catboost(X, y, rdm_state):
     """
     cat_features = [col for col in X.columns if X[col].dtype == "object"]
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=rdm_state, stratify=y
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=rdm_state, stratify=y)
     X_train = X_train.copy()
     X_test = X_test.copy()
     X_train[cat_features] = X_train[cat_features].fillna("missing").astype(str)
@@ -88,7 +86,7 @@ def train_and_test_catboost(X, y, rdm_state):
 def save_dict(results_dict, output_path, run_label):
     out_dir = Path(output_path) / "monte_carlo"
     out_dir.mkdir(parents=True, exist_ok=True)  # create dir before writing
-    pickle_file = out_dir / f"catboost_results_{run_label}_by_combi.pkl"
+    pickle_file = out_dir / f"catboost_results_{run_label}_days_corr.pkl"
     with open(pickle_file, "wb") as f:
         pkl.dump(results_dict, f)
     print(f"Saved [{run_label}] -> {pickle_file}")
@@ -121,7 +119,7 @@ def prepare_data(data_path, cols_to_keep, num=False, mode="all"):
     elif mode == "is_ambulant":
         data["is_ambulant"] = (data["6MWT_m_pre"] != 0).astype(int)
         if "6MWT_m_pre" in cols:
-            cols.remove("6MWT_m_pre")   # replaced, not kept alongside
+            cols.remove("6MWT_m_pre")  # replaced, not kept alongside
         if "is_ambulant" not in cols:
             cols.append("is_ambulant")
 
@@ -132,12 +130,11 @@ def prepare_data(data_path, cols_to_keep, num=False, mode="all"):
         raise ValueError(f"Unknown mode: {mode!r}")
 
     X = data[cols].copy()
-    y = Calculus.calculate_MCID_2(data, default_threshold=45)  
+    y = Calculus.calculate_MCID_2(data, default_threshold=45)
     return X, y["MCID_classes"]
 
 
-def run_analysis(data_path, cols_to_keep, random_state_list, output_path,
-                 num=False, mode="all"):
+def run_analysis(data_path, cols_to_keep, random_state_list, output_path, num=False, mode="all"):
     X, y = prepare_data(data_path, cols_to_keep, num=num, mode=mode)
 
     class_counts = y.value_counts().to_dict()
@@ -148,9 +145,11 @@ def run_analysis(data_path, cols_to_keep, random_state_list, output_path,
 
     # Upfront viability check: stratified splitting needs >= 2 members per class.
     if y.nunique() < 2 or y.value_counts().min() < 2:
-        print(f"RUN [{mode}] SKIPPED — a class has < 2 members; "
-              f"stratified split is impossible. Treat this subgroup descriptively, "
-              f"not as a classifier.")
+        print(
+            f"RUN [{mode}] SKIPPED — a class has < 2 members; "
+            f"stratified split is impossible. Treat this subgroup descriptively, "
+            f"not as a classifier."
+        )
         return None
 
     results_dict = {}
@@ -196,13 +195,10 @@ if __name__ == "__main__":
     output_path = "results/catboost_results/profile_data"
 
     # Run 1 — original analysis: all patients, continuous 6MWT_m_pre
-    run_analysis(data_path, cols_to_keep, random_state_list, output_path,
-                 num=False, mode="all")
+    run_analysis(data_path, cols_to_keep, random_state_list, output_path, num=False, mode="all")
 
     # Run 2 — 6MWT_m_pre replaced by binary is_ambulant, all patients
-    run_analysis(data_path, cols_to_keep, random_state_list, output_path,
-                 num=False, mode="is_ambulant")
+    run_analysis(data_path, cols_to_keep, random_state_list, output_path, num=False, mode="is_ambulant")
 
     # Run 3 — ambulant patients only, continuous 6MWT_m_pre (small N, exploratory)
-    run_analysis(data_path, cols_to_keep, random_state_list, output_path,
-                 num=False, mode="ambulant_only")
+    run_analysis(data_path, cols_to_keep, random_state_list, output_path, num=False, mode="ambulant_only")

@@ -98,7 +98,7 @@ def main(data_path, cols_to_keep, random_state_list, output_path, num=True, drop
     y = y["MCID_classes"]
     if drop:
         data["MCID"] = y
-        data.dropna(subset =["Ank_flex_90",	"Ank_flex_180"], axis=0, inplace=True)
+        data.dropna(subset=["Ank_flex_90", "Ank_flex_180"], axis=0, inplace=True)
         y = data[["MCID"]]
         data.drop(columns=["MCID"], axis=1, inplace=True)
         print(f"Number of included patients: {len(data)}")
@@ -116,8 +116,21 @@ if __name__ == "__main__":
     # cols_to_keep = ["Neurol_cond", "Lesion", "Sex",	"Age",	"Height",	"Weight",	"6MWT_m_pre",	"10MWT_pas_pre",	"10MWT_sec_pre",	"delay_injury",	"delay_loko",
     # "functional_level",	"Artic_hip_flex",	"Artic_hip_ext",	"Artic_hip_add",	"Artic_hip_abd",	"Artic_hip_rot_ext",	"Artic_hip_rot_int",	"Knee_flex",
     # "Knee_ext",	"Ank_flex_90",	"Ank_flex_180",	"Ank_ext",	"H_Flex_ass",	"H_Ext_PP",	"H_abd",	"H_add",	"H_rot_int",	"K_Flex",	"K_Ext",	"A_Dorsiflex_GT",	"A_Plantarflex"]
-    cols_to_keep = ["Neurol_cond", "Lesion_num", "Sex",	"Age",	"BMI",	"6MWT_m_pre",	"10MWT_pas_pre",	"10MWT_sec_pre", "delay_injury",	"delay_loko",
-    "functional_level",	"Ank_flex_90",	"Ank_flex_180"]
+    cols_to_keep = [
+        "Neurol_cond",
+        "Lesion_num",
+        "Sex",
+        "Age",
+        "BMI",
+        "6MWT_m_pre",
+        "10MWT_pas_pre",
+        "10MWT_sec_pre",
+        "delay_injury",
+        "delay_loko",
+        "functional_level",
+        "Ank_flex_90",
+        "Ank_flex_180",
+    ]
     # cols_to_keep = ['Neurol_cond', 'Lesion_num', 'Nb sessions', 'Sex', 'Age', 'Height', 'Weight', '6MWT_m_pre', '10MWT_pas_pre', '10MWT_sec_pre', 'delay_injury', 'delay_loko', 'functional_level']
     # cols_to_keep = [
     #     "Neurol_cond",

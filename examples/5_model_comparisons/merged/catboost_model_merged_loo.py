@@ -13,7 +13,7 @@ def train_and_test_catboost(X, y, train_index, test_index, rdm_state=42):
     # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=rdm_state, stratify=y)
     X_train, X_test = X.iloc[train_index], X.iloc[test_index]
     y_train, y_test = y.iloc[train_index], y.iloc[test_index]
-    
+
     # Automatically detect categorical column
     cat_features = [col for col in X.columns if X[col].dtype == "object"]
 
@@ -33,7 +33,7 @@ def train_and_test_catboost(X, y, train_index, test_index, rdm_state=42):
     )
 
     model.fit(X_train, y_train)  # stopping if no improvement
-                                # eval_set=(X_test, y_test) Fuite de données possible ici
+    # eval_set=(X_test, y_test) Fuite de données possible ici
     feature_imp_df = model.get_feature_importance(prettified=True)
 
     # ── 3. Validation ────────────────────────────────────────────────────────────
@@ -67,14 +67,13 @@ def train_and_test_catboost(X, y, train_index, test_index, rdm_state=42):
         "true_values": y_test,
         "shap_values": shap_values,
         "model_fts_imp": feature_imp_df,
-        "f1_score":f1_score(y_test, y_pred),
-        "classif_report": classification_report(y_test, y_pred)
+        "f1_score": f1_score(y_test, y_pred),
+        "classif_report": classification_report(y_test, y_pred),
     }
 
 
 def save_dict(results_dict, output_path, num):
-    pickle_file_name = (f"{output_path}/catboost_results_merged_data_selected_features_loo.pkl"
-    )
+    pickle_file_name = f"{output_path}/catboost_results_merged_data_selected_features_loo.pkl"
     with open(pickle_file_name, "wb") as file:
         pkl.dump(results_dict, file)
 
@@ -113,13 +112,39 @@ def main(data_path, cols_to_keep, random_state_list, output_path, num=True):
 if __name__ == "__main__":
     data_path = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/merged_data_final.xlsx"
     # All features
-    cols_to_keep_all = ["nb_sessions",	"duration",	"Distance_m",	"Distance_pas",	"Durée_min",	"Vitesse_kmh_MIN",
-                        "Vitesse_kmh_MAX",	"Vitesse_kmh_MOY",	"BWS_%_MIN",	"BWS_%_MAX",	"BWS_%_MOY",
-                        "BWS_kg_MIN",	"BWS_kg_MAX",	"BWS_kg_MOY",	"Guidage_G_%_MIN",	"Guidage_G_%_MAX",
-                        "Guidage_G_%_MOY",	"Guidage_D_%_MIN",	"Guidage_D_%_MAX",	"Guidage_D_%_MOY",
-                        "sessions_per_week",	"6MWT_m_pre",	"Neurol_cond", "Sex",	"Age",
-                        "Nb sessions",	"delay_injury",	"delay_loko",	"functional_level",
-                        "Lesion_num", "BMI"]
+    cols_to_keep_all = [
+        "nb_sessions",
+        "duration",
+        "Distance_m",
+        "Distance_pas",
+        "Durée_min",
+        "Vitesse_kmh_MIN",
+        "Vitesse_kmh_MAX",
+        "Vitesse_kmh_MOY",
+        "BWS_%_MIN",
+        "BWS_%_MAX",
+        "BWS_%_MOY",
+        "BWS_kg_MIN",
+        "BWS_kg_MAX",
+        "BWS_kg_MOY",
+        "Guidage_G_%_MIN",
+        "Guidage_G_%_MAX",
+        "Guidage_G_%_MOY",
+        "Guidage_D_%_MIN",
+        "Guidage_D_%_MAX",
+        "Guidage_D_%_MOY",
+        "sessions_per_week",
+        "6MWT_m_pre",
+        "Neurol_cond",
+        "Sex",
+        "Age",
+        "Nb sessions",
+        "delay_injury",
+        "delay_loko",
+        "functional_level",
+        "Lesion_num",
+        "BMI",
+    ]
     # cols_to_keep_0 = [
     #     "nb_sessions",	"duration",	"Durée_min", "Vitesse_kmh_MOY", "BWS_%_MOY", "cadence", "step_length",
     #     "Guidage_%_MOY", "sessions_per_week", "6MWT_m_pre", "Neurol_cond", "Sex", "Age", "Nb sessions",
@@ -163,17 +188,17 @@ if __name__ == "__main__":
         "BMI",
     ]
     # features for loko intervention only after lasso
-    cols_to_keep_3 = [
-        "nb_sessions",
-        "BWS_%_MOY", # ajoutée manuellement
-        "Guidage_%_MOY",
-        "6MWT_m_pre",
-        "cadence"
-    ]
+    cols_to_keep_3 = ["nb_sessions", "BWS_%_MOY", "Guidage_%_MOY", "6MWT_m_pre", "cadence"]  # ajoutée manuellement
     # Selected features after LASSO stabilised
-    cols_to_keep_4 = ["Nb sessions", "Neurol_cond", "Sex",
-                      "BWS_%_MOY", "sessions_per_week", "Guidage_%_MOY",
-                      "Durée_min"]
+    cols_to_keep_4 = [
+        "Nb sessions",
+        "Neurol_cond",
+        "Sex",
+        "BWS_%_MOY",
+        "sessions_per_week",
+        "Guidage_%_MOY",
+        "Durée_min",
+    ]
     # Selected features after profile analyses
     cols_to_keep_5 = [
         "nb_sessions",

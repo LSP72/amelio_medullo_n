@@ -2,6 +2,7 @@ import pickle as pkl
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def analyze_shap_stability_across_splits(pickle_path, data):
     with open(pickle_path, "rb") as f:
         results = pkl.load(f)
@@ -31,14 +32,15 @@ def analyze_shap_stability_across_splits(pickle_path, data):
     ax.barh(
         range(len(feature_names)),
         shap_mean[sorted_idx],
-        xerr=[shap_mean[sorted_idx] - shap_lower[sorted_idx],
-              shap_upper[sorted_idx] - shap_mean[sorted_idx]],
-        align="center", alpha=0.8, color="steelblue",
-        ecolor="black", capsize=4,
+        xerr=[shap_mean[sorted_idx] - shap_lower[sorted_idx], shap_upper[sorted_idx] - shap_mean[sorted_idx]],
+        align="center",
+        alpha=0.8,
+        color="steelblue",
+        ecolor="black",
+        capsize=4,
     )
     ax.set_yticks(range(len(feature_names)))
-    ax.set_yticklabels([f"{feature_names[i]} (rank σ={rank_std[i]:.1f})"
-                         for i in sorted_idx])
+    ax.set_yticklabels([f"{feature_names[i]} (rank σ={rank_std[i]:.1f})" for i in sorted_idx])
     ax.set_xlabel("Mean |SHAP value| ± 95% CI (across 100 splits)")
     ax.set_title("Stabilité SHAP à travers 100 splits stratifiés")
     plt.tight_layout()

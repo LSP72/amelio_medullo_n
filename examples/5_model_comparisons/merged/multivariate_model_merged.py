@@ -5,9 +5,8 @@ import scipy.stats as stats
 from sklearn.preprocessing import StandardScaler
 from amelio_medullo import DataCleaning, Calculus
 
-
 # --- Déclare explicitement le type de chaque variable ---
-NOMINAL_COLS = ["Neurol_cond", "Sex"]   # ajoute functional_level / Lesion_num si nominales
+NOMINAL_COLS = ["Neurol_cond", "Sex"]  # ajoute functional_level / Lesion_num si nominales
 # Tout le reste de cols_to_keep sera traité comme numérique/continu.
 
 
@@ -47,8 +46,7 @@ def build_design_matrix(X, nominal_cols, scale=True):
         X_num[continuous] = scaler.fit_transform(X_num[continuous])
         # NB: fit sur tout X = OK pour inférence; pour de la prédiction, fit sur le train seulement.
 
-    X_cat = pd.get_dummies(X[nominal_present].astype("category"),
-                           drop_first=True, dtype=float)
+    X_cat = pd.get_dummies(X[nominal_present].astype("category"), drop_first=True, dtype=float)
 
     X_design = pd.concat([X_num, X_cat], axis=1)
     return X_design
@@ -63,24 +61,28 @@ def univariate_screen(X, y, nominal_cols):
         if col in nominal_cols:
             xi = pd.get_dummies(xi.astype("category"), drop_first=True, dtype=float)
         else:
-            xi = pd.DataFrame(StandardScaler().fit_transform(xi.astype(float)),
-                              columns=[col], index=xi.index)  # OR "par SD"
+            xi = pd.DataFrame(
+                StandardScaler().fit_transform(xi.astype(float)), columns=[col], index=xi.index
+            )  # OR "par SD"
         xi = sm.add_constant(xi)
         try:
             res = sm.Logit(y, xi).fit(disp=0)
             for name in xi.columns:
                 if name == "const":
                     continue
-                rows.append({
-                    "variable": name,
-                    "OR": np.exp(res.params[name]),
-                    "CI_low": np.exp(res.conf_int().loc[name, 0]),
-                    "CI_high": np.exp(res.conf_int().loc[name, 1]),
-                    "p_value": res.pvalues[name],
-                })
+                rows.append(
+                    {
+                        "variable": name,
+                        "OR": np.exp(res.params[name]),
+                        "CI_low": np.exp(res.conf_int().loc[name, 0]),
+                        "CI_high": np.exp(res.conf_int().loc[name, 1]),
+                        "p_value": res.pvalues[name],
+                    }
+                )
         except Exception as e:
-            rows.append({"variable": col, "OR": np.nan, "CI_low": np.nan,
-                         "CI_high": np.nan, "p_value": np.nan, "error": str(e)})
+            rows.append(
+                {"variable": col, "OR": np.nan, "CI_low": np.nan, "CI_high": np.nan, "p_value": np.nan, "error": str(e)}
+            )
     out = pd.DataFrame(rows).sort_values("p_value")
     return out
 
@@ -93,12 +95,14 @@ def multivariate_logit(X, y, nominal_cols, scale=True):
     print(model.summary())
 
     # Odds ratios + IC, plus lisibles que les coefficients bruts
-    or_table = pd.DataFrame({
-        "OR": np.exp(model.params),
-        "CI_low": np.exp(model.conf_int()[0]),
-        "CI_high": np.exp(model.conf_int()[1]),
-        "p_value": model.pvalues,
-    })
+    or_table = pd.DataFrame(
+        {
+            "OR": np.exp(model.params),
+            "CI_low": np.exp(model.conf_int()[0]),
+            "CI_high": np.exp(model.conf_int()[1]),
+            "p_value": model.pvalues,
+        }
+    )
     print("\nOdds ratios:\n", or_table)
     return model, or_table
 
@@ -115,18 +119,12 @@ def main(data_path, top_features):
     model, or_table = multivariate_logit(X, y, NOMINAL_COLS, scale=True)
     return model, or_table
 
+
 if __name__ == "__main__":
     data_path = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/merged_data_final.xlsx"
 
     # SELECTED FEATURES
-    cols_to_keep = [
-        "step_length",
-        "Durée_min",
-        "BWS_%_MOY",
-        "duration",
-        "Neurol_cond",
-        "sessions_per_week"
-    ]
+    cols_to_keep = ["step_length", "Durée_min", "BWS_%_MOY", "duration", "Neurol_cond", "sessions_per_week"]
     # All features with high correlated removed (i.e., cadence, speed)
     # cols_to_keep_2 = [
     #     "nb_sessions",

@@ -20,13 +20,15 @@ def compare_imputation_strategies(X, y, n_splits=5, n_repeats=20, random_state=4
     cat_features = [c for c in X.columns if X[c].dtype == "object"]
     num_features = [c for c in X.columns if c not in cat_features]
 
-    cv = RepeatedStratifiedKFold(
-        n_splits=n_splits, n_repeats=n_repeats, random_state=random_state
-    )
+    cv = RepeatedStratifiedKFold(n_splits=n_splits, n_repeats=n_repeats, random_state=random_state)
 
     cb_params = dict(
-        iterations=500, depth=4, l2_leaf_reg=5,
-        eval_metric="AUC", random_seed=42, verbose=0,
+        iterations=500,
+        depth=4,
+        l2_leaf_reg=5,
+        eval_metric="AUC",
+        random_seed=42,
+        verbose=0,
     )
 
     auc_native, auc_imputed = [], []
@@ -46,9 +48,7 @@ def compare_imputation_strategies(X, y, n_splits=5, n_repeats=20, random_state=4
 
         # ---- Condition B : numérique imputé (fit sur TRAIN seulement) ----
         X_tr_b, X_te_b = X_tr.copy(), X_te.copy()
-        imp = IterativeImputer(
-            n_nearest_features=5, random_state=42, imputation_order="ascending"
-        )
+        imp = IterativeImputer(n_nearest_features=5, random_state=42, imputation_order="ascending")
         X_tr_b[num_features] = imp.fit_transform(X_tr_b[num_features])
         X_te_b[num_features] = imp.transform(X_te_b[num_features])
 
@@ -57,6 +57,7 @@ def compare_imputation_strategies(X, y, n_splits=5, n_repeats=20, random_state=4
         auc_imputed.append(roc_auc_score(y_te, mB.predict_proba(X_te_b)[:, 1]))
 
     return np.array(auc_native), np.array(auc_imputed)
+
 
 def report_comparison(auc_native, auc_imputed):
     diff = auc_native - auc_imputed
@@ -68,11 +69,11 @@ def report_comparison(auc_native, auc_imputed):
     stat, p = wilcoxon(auc_native, auc_imputed)
     print(f"Wilcoxon signé : p = {p:.4f}")
     if p > 0.05:
-        print("=> Pas de différence significative : "
-              "le natif est défendable par parcimonie.")
+        print("=> Pas de différence significative : " "le natif est défendable par parcimonie.")
     else:
         gagnant = "natif" if diff.mean() > 0 else "imputé"
         print(f"=> Différence significative en faveur du {gagnant}.")
+
 
 def main(data_path, cols_to_keep, num=True):
     data = pd.read_excel(data_path)
@@ -84,6 +85,7 @@ def main(data_path, cols_to_keep, num=True):
     y = data["MCID_classes"]
     auc_native, auc_imputed = compare_imputation_strategies(X, y)
     report_comparison(auc_native, auc_imputed)
+
 
 if __name__ == "__main__":
     data_path = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/merged_data_final.xlsx"

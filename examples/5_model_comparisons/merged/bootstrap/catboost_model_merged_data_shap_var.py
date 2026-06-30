@@ -8,6 +8,7 @@ from sklearn.metrics import classification_report, ConfusionMatrixDisplay, roc_a
 from amelio_medullo import Calculus, DataCleaning
 import pickle as pkl
 
+
 def train_and_test_catboost(X, y, rdm_state):
     # Automatically detect categorical column
     cat_features = [col for col in X.columns if X[col].dtype == "object"]
@@ -29,7 +30,7 @@ def train_and_test_catboost(X, y, rdm_state):
     )
 
     model.fit(X_train, y_train)  # stopping if no improvement
-                                # eval_set=(X_test, y_test) Fuite de données possible ici
+    # eval_set=(X_test, y_test) Fuite de données possible ici
     feature_imp_df = model.get_feature_importance(prettified=True)
 
     # ── 3. Validation ────────────────────────────────────────────────────────────
@@ -63,14 +64,13 @@ def train_and_test_catboost(X, y, rdm_state):
         "true_values": y_test,
         "shap_values": shap_values,
         "model_fts_imp": feature_imp_df,
-        "f1_score":f1_score(y_test, y_pred),
+        "f1_score": f1_score(y_test, y_pred),
         "classif_report": classification_report(y_test, y_pred),
     }
 
 
 def save_dict(results_dict, output_path, num):
-    pickle_file_name = (f"{output_path}/monte_carlo/catboost_results_merged_data_selected_features_monte_carlo.pkl"
-    )
+    pickle_file_name = f"{output_path}/monte_carlo/catboost_results_merged_data_selected_features_monte_carlo.pkl"
     with open(pickle_file_name, "wb") as file:
         pkl.dump(results_dict, file)
 

@@ -5,10 +5,7 @@ import shap
 import time
 from catboost import CatBoostClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import (
-    classification_report, ConfusionMatrixDisplay,
-    roc_auc_score, f1_score, precision_score
-)
+from sklearn.metrics import classification_report, ConfusionMatrixDisplay, roc_auc_score, f1_score, precision_score
 from amelio_medullo import Calculus, DataCleaning
 import pickle as pkl
 
@@ -16,9 +13,7 @@ import pickle as pkl
 def train_and_test_catboost(X, y, rdm_state):
     cat_features = [col for col in X.columns if X[col].dtype == "object"]
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=rdm_state, stratify=y
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=rdm_state, stratify=y)
     X_train[cat_features] = X_train[cat_features].fillna("missing").astype(str)
     X_test[cat_features] = X_test[cat_features].fillna("missing").astype(str)
 
@@ -35,43 +30,49 @@ def train_and_test_catboost(X, y, rdm_state):
     y_pred = model.predict(X_test)
     y_pred_proba = model.predict_proba(X_test)[:, 1]
 
-    auc   = roc_auc_score(y_test, y_pred_proba)
-    f1    = f1_score(y_test, y_pred, average="binary")
-    prec  = precision_score(y_test, y_pred, average="binary")
+    auc = roc_auc_score(y_test, y_pred_proba)
+    f1 = f1_score(y_test, y_pred, average="binary")
+    prec = precision_score(y_test, y_pred, average="binary")
 
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(X_test)
 
     return {
-        "random_state":      rdm_state,
-        "model":             model,
-        "index_train":       X_train.index,
-        "index_test":        y_test.index,
-        "predictions":       y_pred,
+        "random_state": rdm_state,
+        "model": model,
+        "index_train": X_train.index,
+        "index_test": y_test.index,
+        "predictions": y_pred,
         "proba_predictions": y_pred_proba,
-        "auc_test":          auc,
-        "true_values":       y_test,
-        "shap_values":       shap_values,
-        "model_fts_imp":     model.get_feature_importance(prettified=True),
-        "f1_score":          f1,
-        "precision":         prec,
-        "classif_report":    classification_report(y_test, y_pred),
+        "auc_test": auc,
+        "true_values": y_test,
+        "shap_values": shap_values,
+        "model_fts_imp": model.get_feature_importance(prettified=True),
+        "f1_score": f1,
+        "precision": prec,
+        "classif_report": classification_report(y_test, y_pred),
     }
 
 
 def summarize_results(results_dict):
     """Means and standard deviations of metrics across all Monte Carlo iterations."""
-    aucs   = [v["auc_test"]  for v in results_dict.values()]
-    f1s    = [v["f1_score"]  for v in results_dict.values()]
-    precs  = [v["precision"] for v in results_dict.values()]
+    aucs = [v["auc_test"] for v in results_dict.values()]
+    f1s = [v["f1_score"] for v in results_dict.values()]
+    precs = [v["precision"] for v in results_dict.values()]
 
-    summary = pd.DataFrame({
-        "Metrics":          ["AUC",     "F1",      "Precision"],
-        "Mean":             [np.mean(aucs),  np.mean(f1s),  np.mean(precs)],
-        "Std Dev":          [np.std(aucs),   np.std(f1s),   np.std(precs)],
-        "Min":              [np.min(aucs),   np.min(f1s),   np.min(precs)],
-        "Max":              [np.max(aucs),   np.max(f1s),   np.max(precs)],
-    }).set_index("Metrics").round(4)
+    summary = (
+        pd.DataFrame(
+            {
+                "Metrics": ["AUC", "F1", "Precision"],
+                "Mean": [np.mean(aucs), np.mean(f1s), np.mean(precs)],
+                "Std Dev": [np.std(aucs), np.std(f1s), np.std(precs)],
+                "Min": [np.min(aucs), np.min(f1s), np.min(precs)],
+                "Max": [np.max(aucs), np.max(f1s), np.max(precs)],
+            }
+        )
+        .set_index("Metrics")
+        .round(4)
+    )
 
     print("\n=== Results Monte Carlo ===")
     print(summary.to_string())
@@ -147,7 +148,7 @@ if __name__ == "__main__":
         "delay_injury",
         "delay_loko",
         "functional_level",
-        "speed"
+        "speed",
     ]
     # cols_to_keep = ['Neurol_cond', 'Sex', 'Age', 'BMI', '6MWT_m_pre', '10MWT_pas_pre', '10MWT_sec_pre', 'delay_injury', 'delay_loko', 'functional_level', 'Artic_hip_flex', 'Artic_hip_abd', 'Ank_flex_90', 'Ank_flex_180', 'H_abd', 'Lesion_num']
     # random_state_list = [42, 72]

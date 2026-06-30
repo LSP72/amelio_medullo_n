@@ -43,23 +43,24 @@ DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMon
 MCID_THRESHOLD = 45
 RANDOM_STATE = 42
 
-USE_LOO = False   # True -> LeaveOneOut ; False -> StratifiedKFold
-N_SPLITS = 10     # utilisé seulement si USE_LOO = False (sera plafonné selon la classe la plus rare)
+USE_LOO = False  # True -> LeaveOneOut ; False -> StratifiedKFold
+N_SPLITS = 10  # utilisé seulement si USE_LOO = False (sera plafonné selon la classe la plus rare)
 
 # Colonnes à garder : identifiants + variables post-traitement (fuite vers la cible)
 COLS_TO_KEEP = [
-        "Neurol_cond",
-        "Lesion_num",
-        "Nb sessions",
-        "Sex",
-        "Age",
-        "BMI",
-        "6MWT_m_pre",
-        "10MWT_pas_pre",
-        "10MWT_sec_pre",
-        "delay_injury",
-        "delay_loko",
-        "functional_level"]
+    "Neurol_cond",
+    "Lesion_num",
+    "Nb sessions",
+    "Sex",
+    "Age",
+    "BMI",
+    "6MWT_m_pre",
+    "10MWT_pas_pre",
+    "10MWT_sec_pre",
+    "delay_injury",
+    "delay_loko",
+    "functional_level",
+]
 
 # Colonnes catégorielles NOMINALES -> one-hot (surtout pas 1/2/3)
 CATEGORICAL_COLS = ["Trouble neuro"]
@@ -86,8 +87,7 @@ print("\nType des colonnes (repère d'éventuelles colonnes texte oubliées) :")
 print(X.dtypes)
 print("\nRépartition de la cible :")
 print(y.value_counts(dropna=False))
-print(f"Classe majoritaire = {y.value_counts(normalize=True).max():.1%}  "
-      f"(un modèle naïf ferait déjà ce score)")
+print(f"Classe majoritaire = {y.value_counts(normalize=True).max():.1%}  " f"(un modèle naïf ferait déjà ce score)")
 
 
 # =====================================================================
@@ -98,26 +98,35 @@ print(f"Classe majoritaire = {y.value_counts(normalize=True).max():.1%}  "
 # par cross_validate -> aucune information du test ne fuit.
 numeric_cols = [c for c in X.columns if c not in CATEGORICAL_COLS]
 
-numeric_pipe = Pipeline([
-    # NB : avec un très petit n, SimpleImputer(strategy="median") est plus
-    # robuste qu'IterativeImputer. À tester.
-    ("imputer", IterativeImputer(
-        n_nearest_features=5,
-        imputation_order="ascending",
-        random_state=RANDOM_STATE,
-    )),
-    ("scaler", StandardScaler()),  # inutile pour les arbres, mais sans effet néfaste
-])
+numeric_pipe = Pipeline(
+    [
+        # NB : avec un très petit n, SimpleImputer(strategy="median") est plus
+        # robuste qu'IterativeImputer. À tester.
+        (
+            "imputer",
+            IterativeImputer(
+                n_nearest_features=5,
+                imputation_order="ascending",
+                random_state=RANDOM_STATE,
+            ),
+        ),
+        ("scaler", StandardScaler()),  # inutile pour les arbres, mais sans effet néfaste
+    ]
+)
 
-categorical_pipe = Pipeline([
-    ("imputer", SimpleImputer(strategy="most_frequent")),
-    ("onehot", OneHotEncoder(handle_unknown="ignore")),
-])
+categorical_pipe = Pipeline(
+    [
+        ("imputer", SimpleImputer(strategy="most_frequent")),
+        ("onehot", OneHotEncoder(handle_unknown="ignore")),
+    ]
+)
 
-preprocess = ColumnTransformer([
-    ("num", numeric_pipe, numeric_cols),
-    ("cat", categorical_pipe, CATEGORICAL_COLS),
-])
+preprocess = ColumnTransformer(
+    [
+        ("num", numeric_pipe, numeric_cols),
+        ("cat", categorical_pipe, CATEGORICAL_COLS),
+    ]
+)
 
 
 # =====================================================================
@@ -131,7 +140,7 @@ models = {
     "RandomForest": RandomForestClassifier(random_state=RANDOM_STATE),
     "HistGradientBoosting": HistGradientBoostingClassifier(random_state=RANDOM_STATE),
     "SVC": SVC(random_state=RANDOM_STATE, probability=True),  # probability pour AUC/SHAP
-    "LinearSVC": LinearSVC(random_state=RANDOM_STATE),         # AUC via decision_function
+    "LinearSVC": LinearSVC(random_state=RANDOM_STATE),  # AUC via decision_function
 }
 
 
@@ -139,7 +148,7 @@ models = {
 # BLOC 4 — Validation croisée (métriques multiples, stratifiée par y)
 # =====================================================================
 # %%
-is_binary = (y.nunique() == 2)
+is_binary = y.nunique() == 2
 
 if USE_LOO:
     cv = LeaveOneOut()
@@ -184,14 +193,12 @@ print(results.round(3))
 def run_shap(name, test_size=0.25, n_background=50):
     """Explique un modèle via SHAP en évitant la fuite : le préprocesseur
     n'est ajusté que sur le train. On explique la PROBABILITÉ (pas le label)."""
-    X_tr, X_te, y_tr, y_te = train_test_split(
-        X, y, test_size=test_size, stratify=y, random_state=RANDOM_STATE
-    )
+    X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=test_size, stratify=y, random_state=RANDOM_STATE)
 
-    prep = preprocess.fit(X_tr, y_tr)          # ajusté sur le train uniquement
+    prep = preprocess.fit(X_tr, y_tr)  # ajusté sur le train uniquement
     X_tr_t = prep.transform(X_tr)
     X_te_t = prep.transform(X_te)
-    feat = prep.get_feature_names_out()        # noms après one-hot
+    feat = prep.get_feature_names_out()  # noms après one-hot
 
     model = models[name]
     model.fit(X_tr_t, y_tr)
@@ -201,7 +208,7 @@ def run_shap(name, test_size=0.25, n_background=50):
         # Exact et bien plus rapide pour les arbres.
         explainer = shap.TreeExplainer(model)
         shap_values = explainer.shap_values(X_te_t)
-        if isinstance(shap_values, list):      # binaire -> [classe0, classe1]
+        if isinstance(shap_values, list):  # binaire -> [classe0, classe1]
             shap_values = shap_values[1]
     else:
         # Probabilité de la classe positive si dispo, sinon score de décision.

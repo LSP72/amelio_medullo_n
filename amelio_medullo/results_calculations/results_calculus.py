@@ -13,7 +13,7 @@ class ResultsCalculus:
         if strategy == "quantile":
             edges = np.quantile(y_proba, np.linspace(0, 1, n_bins + 1))
             edges[0], edges[-1] = 0.0, 1.0  # ensure full coverage
-            edges = np.unique(edges)        # guard against duplicate quantiles
+            edges = np.unique(edges)  # guard against duplicate quantiles
         else:  # uniform
             edges = np.linspace(0, 1, n_bins + 1)
 
