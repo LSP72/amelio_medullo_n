@@ -1,0 +1,294 @@
+import pandas as pd
+
+
+class ProcessExcel:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def collect_excel_file_path():
+        """Function to collect the file path of the excel file.
+
+        Returns
+        -------
+        str
+            The file path of the excel file.
+        """
+        import tkinter as tk
+        from tkinter import filedialog
+
+        root = tk.Tk()
+        root.withdraw()  # Hide the main window
+
+        file_path = filedialog.askopenfilename(
+            title="Select a file", filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")]
+        )
+
+        return file_path
+
+    @staticmethod
+    def read_excel(file_path: str) -> dict:
+        """Function to read and return the data of the excel.
+
+        Parameters
+        ----------
+        file_path : str
+            Path to the excel file.
+
+        Returns
+        -------
+        dict
+            Dictionary containing the data, separated by sheets of the excel file.
+        """
+        try:
+            data = pd.read_excel(file_path, sheet_name=None)  # Read all sheets into a dictionary
+            return data
+
+        except Exception as e:
+            print(f"Error reading Excel file: {e}")
+            return None
+
+    @staticmethod
+    def read_excel_sheets(data: dict, show: str = True) -> dict:
+        """fonction to read the title of all excel sheets.
+
+        Parameters
+        ----------
+        data : dict
+            Dictionary containing the data, separated by sheets of the excel file.
+
+        Returns
+        -------
+        dict
+            Dictionary containing the titles of the sheets.
+        """
+        sheets_col = {}
+        try:
+            for name, df in data.items():
+                sheets_col[name] = df.columns
+                if show == True:
+                    print("Sheet:", name)
+                    print(df.columns)
+            return sheets_col
+
+        except Exception as e:
+            print(f"Error reading Excel sheet: {e}")
+            return None
+
+    def translate_date(data: dict) -> dict:
+        """Function to translate the date from the excel to a comprehnsible date object in Python
+           This will allow to remove some rows based on the date, if needed.
+
+        Parameters
+        ----------
+        data : dict
+            Dictionary containing the data, separated by sheets of the excel file.
+
+        Returns
+        -------
+        dict
+            Same dictionnary, but with the translated date column added.
+        """
+        for name, df in data.items():
+            if "Date_Formulaire" in df.columns:
+                df["translated_date"] = pd.to_datetime(df["Date_Formulaire"], format="%d%b%Y:%H:%M:%S")
+
+        print("Dates have been translated to be interpreted by the algorithm.")
+        return data
+
+
+class ProcessPatients:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def read_patients(data: dict) -> dict:
+        """Function to collect all patients in all sheets.
+
+        Parameters
+        ----------
+        data : dict
+            _description_
+
+        Returns
+        -------
+        dict
+            Dictionary containing the patients in each sheet.
+        """
+        dict_patients = {}
+        for name, df in data.items():
+            dict_patients[name] = df["IPP"].tolist()
+        return dict_patients
+
+    @staticmethod
+    def check_patients(dict_patients: dict, eval1: str, eval2: str) -> list:
+        """Function to check if patients of eval1 are in the eval2.
+
+        Parameters
+        ----------
+        dict_patients : dict
+            Dictionary containing the patients in each sheet.
+        eval1 : str
+            Name of the sheet of the first evaluation.
+        eval2 : str
+            Name of the sheet of the second evaluation.
+
+        Returns
+        -------
+        list
+            List of patients that are in both evaluations.
+
+        Raises
+        ------
+        ValueError
+            If neither eval1 nor eval2 are provided.
+        """
+        if eval1 is None or eval2 is None:
+            raise ValueError("eval1 and eval2 must be provided.")
+
+        patients1 = dict_patients.get(eval1, [])
+        patients2 = dict_patients.get(eval2, [])
+        common = set(patients1) & set(patients2)
+        if common:
+            print(f"Patients in common between {eval1} and {eval2}: {common}")
+            return list(common)
+        else:
+            raise ValueError(f"No common patients between {eval1} and {eval2}.")
+
+    @staticmethod
+    def check_patients_all_sheets(dict_patients: dict) -> list:
+        """Function that returns the list of patients that are in all sheets of the excel file.
+
+        Parameters
+        ----------
+        dict_patients : dict
+            Dictionary containing the patients per sheet.
+
+        Returns
+        -------
+        list
+            List of patients that are in all sheets.
+        """
+        lists = list(dict_patients.values())
+        common_patients = set(lists[0])  # remove doubles in the first (i.e., main) list
+
+        for patients in lists[1:]:
+            common_patients &= set(patients)
+
+        return list(common_patients)
+
+    @staticmethod
+    def check_patients_in_main_list(dict_patients: dict, main_list: str) -> bool:
+        """Function to check if the patient in the sublists are indeed in the first (main) list.
+
+        Parameters
+        ----------
+        dict_patients : dict
+            Dictionary containing the patients per sheet.
+        main_list : str
+            Name of the main list.
+
+        Returns
+        -------
+        bool
+            True if all patients in the sub-lists are also in the main list, False otherwise.
+        """
+        main_set = set(dict_patients[main_list])  # remove doubles in the main list
+        all_evaluations_valid = True  # will be set to False if any patient is missing in the main list
+
+        for name, patients in dict_patients.items():
+            missing = [p for p in patients if p not in main_set]
+
+            if missing:
+                all_evaluations_valid = False
+                print(f"{name} - Patients not in the main list: {missing}")
+
+        if all_evaluations_valid:
+            print("All patients in the sub-lists are also in the main list.")
+            return all_evaluations_valid
+        else:
+            return all_evaluations_valid
+
+    @staticmethod
+    def collect_patients_for_chosen_intervention(data: dict, main_info: str, intervention: str) -> pd.Series:
+        """Function that collects the patients for a choosen intervention.
+
+        Parameters
+        ----------
+        data : dict
+            Dictionary containing the patients per sheet.
+        intervention : str
+            Name of the intervention.
+
+        Returns
+        -------
+        pd.Series
+            Series of patients that are in the choosen intervention.
+        """
+        main_patients = data[main_info]  # main list of patients
+        if intervention in main_patients.columns.to_list():
+            # check if there's the column specifying the intervention used
+            # if None, it is assumed that the .xlsx was already only for the intervention used
+            intervention_patients = main_patients[main_patients[intervention] == "Oui"]["IPP"]
+            # TODO: check if need to remove doubles in intervention_patients
+            # intervention_patients_set = set(intervention_patients)  # remove doubles in the intervention list
+            return intervention_patients
+        else:
+            print(
+                f"No {intervention} column found; it is assumed that the excel was already the data of the {intervention}."
+            )
+            return main_patients["IPP"]
+
+    @staticmethod
+    def select_patients(data: dict, patients: pd.Series) -> dict:
+        """Function that selects the data of the corresponding patients.
+
+        Parameters
+        ----------
+        data : dict
+            Dictionary containing the patients per sheet.
+        patients : pd.Series
+            Series of patients' ID to select.
+            FROM: the collect_patients_for_chosen_intervention function (need to run before).
+
+        Returns
+        -------
+        dict
+            Dictionary containing the selected patients per sheet.
+        """
+        selected_data = {}
+        for name, df in data.items():
+            selected_data[name] = df.loc[
+                df["IPP"].isin(patients)
+            ]  # based on the index of the patients, as might be double IPP.
+        return selected_data
+
+    @staticmethod
+    def check_patients_in_pre_and_post_evaluations(pre_eval: pd.Series, post_eval: pd.Series) -> list:
+        """Function that checks if patients in pre-evaluation are in post-evaluation.
+
+        Parameters
+        ----------
+        pre_eval : pd.DataFrame
+            DataFrame containing the pre-evaluation patients.
+        post_eval : pd.DataFrame
+            DataFrame containing the post-evaluation patients.
+
+        Returns
+        -------
+        list
+            List of patients that are in the pre-evaluation but not in the post-evaluation.
+        """
+        pre_eval_np = pre_eval.to_numpy()
+        post_eval_np = post_eval.to_numpy()
+        if len(pre_eval_np) != len(post_eval_np):
+            print(
+                f"Number of patients in pre_evaluation ({len(pre_eval_np)}) and post_evaluation ({len(post_eval_np)}) do not match."
+            )
+
+        # TODO: check if need to remove doubles in post_eval
+        # post_eval_set = set(post_eval_np)
+        missings = [a for a in pre_eval_np[:, 1] if a not in post_eval_np[:, 1]]
+        if missings:
+            print(f"{len(missings)} patients from pre_evaluation are not in post_evaluation:\n {missings}")
+        return missings
