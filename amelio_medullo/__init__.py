@@ -2,6 +2,10 @@ from .processing.patients.process_file import ProcessExcel
 from .processing.patients.process_file import ProcessPatients
 from .processing.patients.process_data import ProcessData
 from .processing.lokomat.process_data_l import ProcessDataLokomat
-from .processing.data.testings_data import MuscleScore, Calculus
+from .processing.data.muscle_scores import MuscleScore
+from .processing.data.splitting_legs import LegSplit
 from .processing.data.data_cleaning import DataCleaning
-from .processing.data.demographic_data import DemographicData
+from .processing.data.demographic_data import DemographicData, FunctionalLevel
+from .processing.data.calculations import Calculus
+from .processing.data.stats.data_explo import Explo
+from .results_calculations.results_calculus import ResultsCalculus
