@@ -25,6 +25,7 @@ share/python-wheels/
 *.toml
 *.csv
 *.xlsx
+*.xls
 *.png
 *.svg
 *.html
