@@ -29,21 +29,31 @@ import pandas as pd
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
 from scipy import stats
-from amelio_medullo import Calculus   # adjust import to your module path
+from amelio_medullo import Calculus  # adjust import to your module path
 
 # ============================ CONFIG =========================================
 DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/final_data_matrix_sessions_separated.xlsx"
 # DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/merged_data_final.xlsx"
 
-# Column names for the change score components. 
-COL_6MWT_PRE  = "6MWT_m_pre"
-COL_6MWT_POST = "6MWT_m_post"    
+# Column names for the change score components.
+COL_6MWT_PRE = "6MWT_m_pre"
+COL_6MWT_POST = "6MWT_m_post"
 
 # Features to test.
 FEATURES = [
-    "Neurol_cond", "Lesion_num", "Nb sessions", "Sex", "Age", "BMI",
-    "6MWT_m_pre", "10MWT_pas_pre", "10MWT_sec_pre", "delay_injury",
-    "delay_loko", "functional_level", "speed",
+    "Neurol_cond",
+    "Lesion_num",
+    "Nb sessions",
+    "Sex",
+    "Age",
+    "BMI",
+    "6MWT_m_pre",
+    "10MWT_pas_pre",
+    "10MWT_sec_pre",
+    "delay_injury",
+    "delay_loko",
+    "functional_level",
+    "speed",
 ]
 # FEATURES = [
 #         "duration", "Durée_min", "Vitesse_kmh_MOY", "BWS_%_MOY",
@@ -54,7 +64,7 @@ FEATURES = [
 # Features arithmetically tied to the outcome (the 'pre' term of the change).
 # Their association is partly mechanical -> reported but flagged.
 COUPLED = {COL_6MWT_PRE}
-CATEGORICAL = {"Neurol_cond", "Sex"}   # text columns -> group test, not a line
+CATEGORICAL = {"Neurol_cond", "Sex"}  # text columns -> group test, not a line
 # =============================================================================
 
 
@@ -62,7 +72,7 @@ def load():
     data = pd.read_excel(DATA_PATH)
     change = data[COL_6MWT_POST].astype(float) - data[COL_6MWT_PRE].astype(float)
     df = data.copy()
-    df = df.replace([np.inf, -np.inf], np.nan) 
+    df = df.replace([np.inf, -np.inf], np.nan)
     df["__change__"] = change
     return df
 
@@ -98,10 +108,10 @@ def fit_categorical(x, y):
     eta2 = ss_between / ss_total if ss_total > 0 else np.nan
     # one-way ANOVA p
     from scipy import stats
+
     fval, pval = stats.f_oneway(*groups)
     means = "; ".join(f"{lvl}: {y1[x1==lvl].mean():.1f}" for lvl in x1.unique())
-    return {"n": int(len(y1)), "equation": f"group means -> {means}",
-            "r2": eta2, "adj_r2": np.nan, "slope_p": pval}
+    return {"n": int(len(y1)), "equation": f"group means -> {means}", "r2": eta2, "adj_r2": np.nan, "slope_p": pval}
 
 
 def plot_grid(df, y, features):
@@ -150,16 +160,23 @@ def plot_grid(df, y, features):
             ax.set_xlabel(f, fontsize=8)
             ax.set_ylabel("6MWT change (m)", fontsize=8)
             if coupled:
-                ax.text(0.5, 0.02, "may be coupled to outcome", transform=ax.transAxes,
-                        ha="center", va="bottom", fontsize=8, color="crimson")
+                ax.text(
+                    0.5,
+                    0.02,
+                    "may be coupled to outcome",
+                    transform=ax.transAxes,
+                    ha="center",
+                    va="bottom",
+                    fontsize=8,
+                    color="crimson",
+                )
 
         ax.tick_params(labelsize=7)
 
     for ax in axes[n:]:
         ax.set_visible(False)
 
-    fig.suptitle("Univariate association with 6MWT change (marginal, not independent)",
-                 fontsize=11, y=1.0)
+    fig.suptitle("Univariate association with 6MWT change (marginal, not independent)", fontsize=11, y=1.0)
     fig.tight_layout()
     fig.legend()
     fig.show()

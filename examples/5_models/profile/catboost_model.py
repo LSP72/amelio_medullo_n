@@ -75,9 +75,7 @@ def train_and_test_catboost(X, y, rdm_state):
 def save_dict(results_dict, output_path):
     date = datetime.now().strftime("%Y%m%d_%H%M%S")
     pickle_file_name = (
-        output_path
-        + "/monte_carlo/catboost_results_separated_sessions"
-        + "Spearman_w_6mwt_" + date + ".pkl"
+        output_path + "/monte_carlo/catboost_results_separated_sessions" + "Spearman_w_6mwt_" + date + ".pkl"
     )
     with open(pickle_file_name, "wb") as file:
         pkl.dump(results_dict, file)
@@ -113,7 +111,7 @@ def main(data_path, cols_to_keep, random_state_list, output_path, per_condition=
             results_dict[rdm_state] = train_and_test_catboost(X, y["MCID_classes"], rdm_state)
             results_dict[rdm_state]["list_of_features"] = cols_to_keep
             save_dict(results_dict, output_path)
-    
+
     else:
         results_dict = {}
         for rdm_state in random_state_list:

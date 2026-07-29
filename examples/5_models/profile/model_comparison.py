@@ -65,18 +65,18 @@ N_SPLITS = 10  # utilisé seulement si USE_LOO = False (sera plafonné selon la 
 #     "speed"
 # ]
 COLS_TO_KEEP = [
-        "duration",
-        "Durée_min",
-        "Vitesse_kmh_MOY",
-        "BWS_%_MOY",
-        "step_length",
-        "Guidage_%_MOY",
-        "sessions_per_week",
-        "Neurol_cond",
-        "Sex",
-        "Nb sessions",
-        "BMI"
-    ]
+    "duration",
+    "Durée_min",
+    "Vitesse_kmh_MOY",
+    "BWS_%_MOY",
+    "step_length",
+    "Guidage_%_MOY",
+    "sessions_per_week",
+    "Neurol_cond",
+    "Sex",
+    "Nb sessions",
+    "BMI",
+]
 
 # Colonnes catégorielles NOMINALES -> one-hot (surtout pas 1/2/3)
 CATEGORICAL_COLS = ["Neurol_cond", "Sex"]

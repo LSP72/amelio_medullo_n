@@ -84,11 +84,10 @@ class MuscleScore:
 
         # New dataframe w/ only the final movement scores
         df_movements = pd.DataFrame(index=df.index)
-        
-        AVC_mask = df['Trouble neuro'] == 'AVC'
+
+        AVC_mask = df["Trouble neuro"] == "AVC"
         cols_with_data = df.columns[df[AVC_mask].notna().any()]
         df_movements = df[cols_with_data]
-
 
         # Unique list of all muscles
         all_muscles = set(muscle for muscles in mapping_dict.values() for muscle in muscles)
@@ -140,11 +139,10 @@ class MuscleScore:
 
             missing_both = df[initial_muscle].isna() & df[alternative_muscle].isna()
             if missing_both.any():
-                print(
-                    f"Neither {initial_muscle} nor {alternative_muscle} have scores for movement {movement}."
-                        )
-        
+                print(f"Neither {initial_muscle} nor {alternative_muscle} have scores for movement {movement}.")
+
         return df
+
     # TODO: fix the suffix changing the name of the columns in the original df, if needed
     @staticmethod
     def transform_dict_to_side(mapping_dict, side, keys=True):

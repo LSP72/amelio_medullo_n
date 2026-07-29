@@ -81,7 +81,7 @@ def plot_matrice_confusion_moyenne(
                 ha="center",
                 va="center",
                 color="black" if mean_cm[i, j] > seuil else "white",
-                fontweight='bold',
+                fontweight="bold",
                 fontsize=15,
             )
 
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     data_path = "results/catboost_results/merged_data/selected_features_with_no_fuite/catboost_results_merged_data_selected_features_with_no_fuite.pkl"
     with open(data_path, "rb") as file:
         results = pkl.load(file)
-    
+
     output_path = "results/catboost_results/"
 
     main(results, output_path=output_path)

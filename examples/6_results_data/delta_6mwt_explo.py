@@ -61,13 +61,17 @@ def main(data_path, conds, eng_conds):
     for cat_key, cat_label in categories:
         # all conditions
         give_info_on_endurance(
-            data, cat_key, cond=None,
+            data,
+            cat_key,
+            cond=None,
             label=f"{cat_label} - toutes conditions",
         )
         # by neurol. condition
         for cond, eng in zip(conds, eng_conds):
             give_info_on_endurance(
-                data, cat_key, cond=cond,
+                data,
+                cat_key,
+                cond=cond,
                 label=f"{cat_label} - {eng}",
             )
 

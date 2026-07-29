@@ -6,7 +6,7 @@ from tkinter import filedialog
 from amelio_medullo import DataCleaning
 
 
-def plot_and_save_corr_matrix(data, output_name, output_file_path, corr_method='pearson'):
+def plot_and_save_corr_matrix(data, output_name, output_file_path, corr_method="pearson"):
     correlation_matrix = data.corr(numeric_only=True, method=corr_method)
     plt.figure(figsize=(16, 12))
 
@@ -21,7 +21,7 @@ def plot_and_save_corr_matrix(data, output_name, output_file_path, corr_method='
     plt.show()
 
 
-def main(file_path, cols_to_keep, output_name, output_file_path, corr_method='pearson', num=True):
+def main(file_path, cols_to_keep, output_name, output_file_path, corr_method="pearson", num=True):
     data = pd.read_excel(file_path)
     data_kept = data[cols_to_keep]
     if num:
@@ -160,11 +160,11 @@ if __name__ == "__main__":
         "functional_level",
         "Lesion_num",
         "BMI",
-        "cadence"
+        "cadence",
     ]
-    
+
     # DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/final_data_matrix_sessions_separated.xlsx"
-    DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/merged_data_final.xlsx"   
+    DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/merged_data_final.xlsx"
 
     # Features to test.
     # FEATURES = [
@@ -173,12 +173,20 @@ if __name__ == "__main__":
     #     "delay_loko", "functional_level", "speed",
     # ]
     FEATURES = [
-            "duration", "Durée_min", "Vitesse_kmh_MOY", "BWS_%_MOY",
-            "step_length", "Guidage_%_MOY", "sessions_per_week",
-            "Neurol_cond", "Sex", "Nb sessions", "BMI"
-        ]
+        "duration",
+        "Durée_min",
+        "Vitesse_kmh_MOY",
+        "BWS_%_MOY",
+        "step_length",
+        "Guidage_%_MOY",
+        "sessions_per_week",
+        "Neurol_cond",
+        "Sex",
+        "Nb sessions",
+        "BMI",
+    ]
 
     output_name = "profile_selected_features_Spearman"
     output_file_path = "results/data_exploration/correlation_matrices/"
 
-    main(DATA_PATH, FEATURES, output_name, output_file_path, corr_method='spearman', num=True)
+    main(DATA_PATH, FEATURES, output_name, output_file_path, corr_method="spearman", num=True)

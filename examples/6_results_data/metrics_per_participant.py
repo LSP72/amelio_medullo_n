@@ -91,10 +91,10 @@ def per_participant_table(long, pos_label=POS_LABEL):
     g = long.groupby("participant")
     tab = pd.DataFrame(
         {
-            "y_true": g["y_true"].first(), 
-            "n_tested": g.size(), # how many times the participant was in a test set
-            "n_correct": g["correct"].sum(), # how many times the participant was correctly classified
-            "accuracy": g["correct"].mean(), # accuracy per participant (mean of correct predictions)
+            "y_true": g["y_true"].first(),
+            "n_tested": g.size(),  # how many times the participant was in a test set
+            "n_correct": g["correct"].sum(),  # how many times the participant was correctly classified
+            "accuracy": g["correct"].mean(),  # accuracy per participant (mean of correct predictions)
             "mean_proba": g["proba"].mean(),
             "std_proba": g["proba"].std(),
             "vote_pos_rate": g["y_pred"].apply(lambda s: (s == pos_label).mean()),
@@ -115,9 +115,7 @@ def confusion_metrics(y_true, y_pred, y_score=None, pos_label=POS_LABEL):
     y_pred = np.asarray(y_pred)
     neg_label = [l for l in np.unique(y_true) if l != pos_label][0]
 
-    tn, fp, fn, tp = confusion_matrix(
-        y_true, y_pred, labels=[neg_label, pos_label]
-    ).ravel()
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[neg_label, pos_label]).ravel()
 
     def sd(a, b):
         return a / b if b else np.nan
@@ -127,7 +125,10 @@ def confusion_metrics(y_true, y_pred, y_score=None, pos_label=POS_LABEL):
     prec = sd(tp, tp + fp)
 
     out = {
-        "TP": int(tp), "FP": int(fp), "TN": int(tn), "FN": int(fn),
+        "TP": int(tp),
+        "FP": int(fp),
+        "TN": int(tn),
+        "FN": int(fn),
         "sensitivity_TPR": sens,
         "specificity_TNR": spec,
         "precision_PPV": prec,
@@ -143,8 +144,7 @@ def confusion_metrics(y_true, y_pred, y_score=None, pos_label=POS_LABEL):
 
 def bootstrap_participants(tab, pred_col, n_boot=2000, pos_label=POS_LABEL):
     """IC en rééchantillonnant les PARTICIPANTS (la vraie unité d'incertitude)."""
-    keys = ["sensitivity_TPR", "specificity_TNR", "precision_PPV", "NPV",
-            "accuracy", "balanced_accuracy", "f1", "AUC"]
+    keys = ["sensitivity_TPR", "specificity_TNR", "precision_PPV", "NPV", "accuracy", "balanced_accuracy", "f1", "AUC"]
     boots = []
     n = len(tab)
     for _ in range(n_boot):
@@ -154,11 +154,13 @@ def bootstrap_participants(tab, pred_col, n_boot=2000, pos_label=POS_LABEL):
         m = confusion_metrics(s["y_true"], s[pred_col], s["mean_proba"], pos_label)
         boots.append({k: m.get(k, np.nan) for k in keys})
     b = pd.DataFrame(boots)
-    return pd.DataFrame({
-        "mean": b.mean(),
-        "p2.5": b.quantile(0.025),
-        "p97.5": b.quantile(0.975),
-    })
+    return pd.DataFrame(
+        {
+            "mean": b.mean(),
+            "p2.5": b.quantile(0.025),
+            "p97.5": b.quantile(0.975),
+        }
+    )
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -180,19 +182,24 @@ def main(pkl_path, csv_out=None, pos_label=POS_LABEL, n_boot=2000):
     )
 
     print("\n── Distribution de l'accuracy par participant ────────────────────")
-    bins = [-.001, .2, .4, .6, .8, 1.0]
+    bins = [-0.001, 0.2, 0.4, 0.6, 0.8, 1.0]
     print(pd.cut(tab["accuracy"], bins).value_counts().sort_index())
 
     print("\n── 15 participants les plus mal classés ──────────────────────────")
     print(tab.head(15)[["y_true", "n_tested", "n_correct", "accuracy", "mean_proba", "std_proba"]])
 
     hard = tab[tab["accuracy"] < 0.5]
-    print(f"\n{len(hard)}/{len(tab)} participants ({100*len(hard)/len(tab):.1f} %) "
-          "sont mal classés dans la MAJORITÉ des splits où ils sont testés.")
+    print(
+        f"\n{len(hard)}/{len(tab)} participants ({100*len(hard)/len(tab):.1f} %) "
+        "sont mal classés dans la MAJORITÉ des splits où ils sont testés."
+    )
     if len(hard):
         print("  répartition par classe réelle :")
-        print(pd.crosstab(tab["y_true"], tab["accuracy"] < 0.5,
-                          normalize="index").rename(columns={False: "ok", True: "hard"}))
+        print(
+            pd.crosstab(tab["y_true"], tab["accuracy"] < 0.5, normalize="index").rename(
+                columns={False: "ok", True: "hard"}
+            )
+        )
 
     print("\n── Métriques au niveau PARTICIPANT (consensus = vote majoritaire) ─")
     m_vote = confusion_metrics(tab["y_true"], tab["pred_vote"], tab["mean_proba"], pos_label)

@@ -30,12 +30,12 @@ import statsmodels.api as sm
 from amelio_medullo import DataCleaning, Calculus
 
 # Nominal categoricals -> must be one-hot, never integer-coded.
-CATEGORICAL = ["Neurol_cond"]      # Sex is 2-level; encoded 0/1 below (order irrelevant)
+CATEGORICAL = ["Neurol_cond"]  # Sex is 2-level; encoded 0/1 below (order irrelevant)
 
 
 def load_data(data_path, cols_to_keep):
     data = pd.read_excel(data_path)
-    data = data.apply(DataCleaning.lesion_level_to_num, axis=1)   # <-- assignment restored
+    data = data.apply(DataCleaning.lesion_level_to_num, axis=1)  # <-- assignment restored
     y = pd.Series(Calculus.calculate_MCID_2(data, 45)["MCID_classes"], name="MCID")
 
     X = data[cols_to_keep].copy()
@@ -59,16 +59,19 @@ def fit_logit(X, y):
     res = sm.Logit(y, Xc).fit(disp=0)
     print(res.summary())
     # odds ratios + CI
-    or_tab = pd.DataFrame({
-        "odds_ratio": np.exp(res.params),
-        "ci_low": np.exp(res.conf_int()[0]),
-        "ci_high": np.exp(res.conf_int()[1]),
-        "p": res.pvalues,
-    })
+    or_tab = pd.DataFrame(
+        {
+            "odds_ratio": np.exp(res.params),
+            "ci_low": np.exp(res.conf_int()[0]),
+            "ci_high": np.exp(res.conf_int()[1]),
+            "p": res.pvalues,
+        }
+    )
     print("\nOdds ratios (exp(coef)):")
     print(or_tab.round(3).to_string())
     # in-sample AUC (fit quality, NOT generalization)
     from sklearn.metrics import roc_auc_score
+
     auc = roc_auc_score(y, res.predict(Xc))
     print(f"\nPseudo-R2 (McFadden): {res.prsquared:.3f} | in-sample AUC: {auc:.3f}")
     return res
@@ -77,33 +80,40 @@ def fit_logit(X, y):
 def fit_lpm(X, y):
     """OLS on 0/1 with HC3 robust SEs. Only if you want probability-scale coefs."""
     Xc = sm.add_constant(X.astype(float))
-    res = sm.OLS(y, Xc).fit(cov_type="HC3")   # robust SEs for the built-in heterosked.
+    res = sm.OLS(y, Xc).fit(cov_type="HC3")  # robust SEs for the built-in heterosked.
     print(res.summary())
     pred = res.predict(Xc)
     n_out = int(((pred < 0) | (pred > 1)).sum())
-    print(f"\nPredictions outside [0,1]: {n_out}/{len(pred)} "
-          f"(LPM artifact; can't be fixed by robust SEs)")
+    print(f"\nPredictions outside [0,1]: {n_out}/{len(pred)} " f"(LPM artifact; can't be fixed by robust SEs)")
     return res
 
 
 def main(data_path, features, model="logit"):
     X, y, n = load_data(data_path, features)
-    print(f"n = {n} complete cases | {X.shape[1]} design columns "
-          f"| responders = {int(y.sum())} ({y.mean():.1%})")
+    print(f"n = {n} complete cases | {X.shape[1]} design columns " f"| responders = {int(y.sum())} ({y.mean():.1%})")
     ratio = n / X.shape[1]
     if ratio < 10:
-        print(f"WARNING: {ratio:.1f} rows per coefficient (<10). Estimates unstable; "
-              f"consider fewer features or penalized regression.")
+        print(
+            f"WARNING: {ratio:.1f} rows per coefficient (<10). Estimates unstable; "
+            f"consider fewer features or penalized regression."
+        )
     print()
     return fit_logit(X, y) if model == "logit" else fit_lpm(X, y)
+
 
 if __name__ == "__main__":
     DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/final_data_matrix_sessions_separated.xlsx"
     # DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/merged_data_final.xlsx"
 
     FEATURES = [
-        "Lesion_num", "Nb sessions", "Sex", "BMI",
-        "6MWT_m_pre", "delay_loko", "functional_level", "speed",
+        "Lesion_num",
+        "Nb sessions",
+        "Sex",
+        "BMI",
+        "6MWT_m_pre",
+        "delay_loko",
+        "functional_level",
+        "speed",
     ]
     # FEATURES = [
     #         "duration", "Durée_min", "Vitesse_kmh_MOY", "BWS_%_MOY",

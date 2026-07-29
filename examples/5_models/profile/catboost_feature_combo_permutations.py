@@ -43,7 +43,7 @@ from itertools import combinations
 # Adjust this import to point at the module holding your original script.
 # If your file is `feature_search.py`, this is `from feature_search import ...`.
 from catboost_feature_combo import (
-    train_single_split,      # reused verbatim -> identical per-fold behavior
+    train_single_split,  # reused verbatim -> identical per-fold behavior
     DataCleaning,
     Calculus,
 )
@@ -52,20 +52,30 @@ from catboost_feature_combo import (
 DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/final_data_matrix_sessions_separated.xlsx"
 
 ALL_COLS = [
-    "Neurol_cond", "Lesion_num", "Nb sessions", "Sex", "Age", "BMI",
-    "6MWT_m_pre", "10MWT_pas_pre", "10MWT_sec_pre", "delay_injury",
-    "delay_loko", "functional_level", "speed",
+    "Neurol_cond",
+    "Lesion_num",
+    "Nb sessions",
+    "Sex",
+    "Age",
+    "BMI",
+    "6MWT_m_pre",
+    "10MWT_pas_pre",
+    "10MWT_sec_pre",
+    "delay_injury",
+    "delay_loko",
+    "functional_level",
+    "speed",
 ]
 
 # --- knobs: start small, scale after timing one permutation ------------------
-N_PERM       = 20                      # permutations. 200-300 for a real tail estimate.
-N_SPLITS     = 10                      # splits per combo. Fewer = faster, noisier per-combo.
+N_PERM = 20  # permutations. 200-300 for a real tail estimate.
+N_SPLITS = 10  # splits per combo. Fewer = faster, noisier per-combo.
 MIN_FEATURES = 4
-MAX_FEATURES = 8                       # 9-13 are already dead; scoping to 4-8 is defensible.
-SPLIT_SEEDS  = np.arange(1, N_SPLITS + 1)   # SAME seeds every permutation -> split structure fixed
-REAL_BEST_AUC = 0.7936                 # your observed max, for the final comparison
-OUT_DIR      = "results/permutation_null"
-NUM          = False                   # matches your real run's `num=False`
+MAX_FEATURES = 8  # 9-13 are already dead; scoping to 4-8 is defensible.
+SPLIT_SEEDS = np.arange(1, N_SPLITS + 1)  # SAME seeds every permutation -> split structure fixed
+REAL_BEST_AUC = 0.7936  # your observed max, for the final comparison
+OUT_DIR = "results/permutation_null"
+NUM = False  # matches your real run's `num=False`
 # =============================================================================
 
 
@@ -105,12 +115,11 @@ def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     X, y = load_Xy()
     y_arr = y.to_numpy()
-    n_combos = sum(len(list(combinations(ALL_COLS, s)))
-                   for s in range(MIN_FEATURES, MAX_FEATURES + 1))
+    n_combos = sum(len(list(combinations(ALL_COLS, s))) for s in range(MIN_FEATURES, MAX_FEATURES + 1))
     print(f"Combinations per permutation: {n_combos} | splits each: {N_SPLITS}")
     print(f"Fits per permutation: ~{n_combos * N_SPLITS:,} | permutations: {N_PERM}\n")
 
-    rng = np.random.default_rng(0)   # controls the label shuffles, reproducibly
+    rng = np.random.default_rng(0)  # controls the label shuffles, reproducibly
     null_maxes = []
 
     for p in range(N_PERM):
@@ -120,8 +129,10 @@ def main():
         best = run_full_search_max(X, y_perm)
         null_maxes.append(best)
         dt = time.time() - t0
-        print(f"perm {p+1:3d}/{N_PERM}  null max AUC = {best:.4f}  ({dt:.1f}s)"
-              + ("   <-- first perm: multiply by N_PERM for total budget" if p == 0 else ""))
+        print(
+            f"perm {p+1:3d}/{N_PERM}  null max AUC = {best:.4f}  ({dt:.1f}s)"
+            + ("   <-- first perm: multiply by N_PERM for total budget" if p == 0 else "")
+        )
         pd.Series(null_maxes).to_csv(f"{OUT_DIR}/null_max_aucs.csv", index=False)
 
     null = np.array(null_maxes)
@@ -129,8 +140,7 @@ def main():
     p_value = (np.sum(null >= REAL_BEST_AUC) + 1) / (len(null) + 1)  # +1: never report p=0
 
     print("\n================ RESULT ================")
-    print(f"Null max-AUC:  median {pctl[50]:.4f} | 90th {pctl[90]:.4f} "
-          f"| 95th {pctl[95]:.4f} | 99th {pctl[99]:.4f}")
+    print(f"Null max-AUC:  median {pctl[50]:.4f} | 90th {pctl[90]:.4f} " f"| 95th {pctl[95]:.4f} | 99th {pctl[99]:.4f}")
     print(f"Your real max-AUC: {REAL_BEST_AUC:.4f}")
     print(f"Permutation p-value: {p_value:.4f}  (from {len(null)} permutations)")
     if REAL_BEST_AUC >= pctl[99]:
