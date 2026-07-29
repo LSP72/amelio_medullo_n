@@ -412,7 +412,7 @@ if __name__ == "__main__":
         "Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/"
         "CHUNantes collaboration/donnees/data_from_dpi/final_data_matrix_sessions_separated.xlsx"
     )
-    DICT_PATH = "results/catboost_results/profile_data/catboost_results_wout_delay_injury_selected_features_by_combi/catboost_results_separated_sessions_wout_delay_injury_selected_features_by_combi.pkl"
+    DICT_PATH = "results/catboost_results/profile_data/with_no_fuite_selected_features_wout_0.7_correlated/delay_loko/catboost_results_separated_sessions_Neurol_cond_Lesion_num_Nb_sessions_Sex_BMI_6MWT_m_pre_delay_loko_functional_level_speed_selected_features_by_combi.pkl"
     FEATURE_NAMES_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/others/feature_names.xlsx"
 
     run_pipeline(DATA_PATH, DICT_PATH, FEATURE_NAMES_PATH)
