@@ -16,6 +16,8 @@
 # %%
 import numpy as np
 import pandas as pd
+from pathlib import Path
+from datetime import datetime
 import matplotlib.pyplot as plt
 
 from sklearn.compose import ColumnTransformer
@@ -39,31 +41,45 @@ import shap
 from amelio_medullo import Calculus
 
 # ---- Config (remplace les input()) ----------------------------------
-DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/final_data_matrix_sessions_separated.xlsx"
+DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/merged_data_final.xlsx"
+OUTPUT_DIR = "results/model_tests/model_comparisons/"
 MCID_THRESHOLD = 45
 RANDOM_STATE = 42
 
-USE_LOO = False  # True -> LeaveOneOut ; False -> StratifiedKFold
+USE_LOO = True  # True -> LeaveOneOut ; False -> StratifiedKFold
 N_SPLITS = 10  # utilisé seulement si USE_LOO = False (sera plafonné selon la classe la plus rare)
 
-# Colonnes à garder : identifiants + variables post-traitement (fuite vers la cible)
+# COLS_TO_KEEP = [
+#     "Neurol_cond",
+#     "Lesion_num",
+#     "Nb sessions",
+#     "Sex",
+#     "Age",
+#     "BMI",
+#     "6MWT_m_pre",
+#     # "10MWT_pas_pre",
+#     # "10MWT_sec_pre",
+#     # "delay_injury",
+#     "delay_loko",
+#     "functional_level",
+#     "speed"
+# ]
 COLS_TO_KEEP = [
-    "Neurol_cond",
-    "Lesion_num",
-    "Nb sessions",
-    "Sex",
-    "Age",
-    "BMI",
-    "6MWT_m_pre",
-    "10MWT_pas_pre",
-    "10MWT_sec_pre",
-    "delay_injury",
-    "delay_loko",
-    "functional_level",
-]
+        "duration",
+        "Durée_min",
+        "Vitesse_kmh_MOY",
+        "BWS_%_MOY",
+        "step_length",
+        "Guidage_%_MOY",
+        "sessions_per_week",
+        "Neurol_cond",
+        "Sex",
+        "Nb sessions",
+        "BMI"
+    ]
 
 # Colonnes catégorielles NOMINALES -> one-hot (surtout pas 1/2/3)
-CATEGORICAL_COLS = ["Trouble neuro"]
+CATEGORICAL_COLS = ["Neurol_cond", "Sex"]
 
 
 # =====================================================================
@@ -76,6 +92,7 @@ data = pd.read_excel(DATA_PATH)
 y = pd.Series(Calculus.calculate_MCID_2(data, default_threshold=MCID_THRESHOLD)["MCID_classes"]).reset_index(drop=True)
 
 X = data[COLS_TO_KEEP].copy()
+X = X.replace([np.inf, -np.inf], 0)  # pour éviter des erreurs dans le pipeline
 
 # On garde "Trouble neuro" en texte : le one-hot se fera dans le pipeline.
 feature_names = X.columns.tolist()
@@ -164,7 +181,7 @@ else:
     scoring = ["accuracy", "balanced_accuracy"]
     if is_binary:
         scoring += ["roc_auc", "f1"]
-    print(f"StratifiedKFold avec n_splits = {n_splits}")
+    print(f"StratifiedKFold with n_splits = {n_splits}")
 
 rows = []
 for name, model in models.items():
@@ -184,6 +201,10 @@ results = pd.DataFrame(rows).set_index("model")
 sort_key = "accuracy" if USE_LOO else "balanced_accuracy_mean"
 results = results.sort_values(sort_key, ascending=False)
 print(results.round(3))
+dataset = Path(DATA_PATH).stem
+date = datetime.now().strftime("%Y-%m-%d")
+output_path = OUTPUT_DIR + f"model_comparison_results_{dataset}_{date}.xlsx"
+results.to_excel(output_path)
 
 
 # =====================================================================
