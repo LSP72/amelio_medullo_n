@@ -102,7 +102,7 @@ def print_metrics_summary(name, n_iterations, metrics):
     )
 
 
-def save_metrics_text(name, n_iterations, metrics, out_dir="results/catboost_results"):
+def save_metrics_text(name, n_iterations, metrics, cols_to_keep, out_dir="results/catboost_results"):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -113,7 +113,8 @@ def save_metrics_text(name, n_iterations, metrics, out_dir="results/catboost_res
         f"AUC:\nMean = {metrics['auc'].mean():.3f}\nStd  = {metrics['auc'].std():.3f}\n\n"
         f"Expected Calibration Error:\nMean = {metrics['ece'].mean():.3f}\nStd  = {metrics['ece'].std():.3f}\n\n"
         f"Probability dispersion (mean abs deviation from mean proba):\n"
-        f"Mean = {metrics['proba_dispersion'].mean():.3f}\nStd  = {metrics['proba_dispersion'].std():.3f}\n"
+        f"Mean = {metrics['proba_dispersion'].mean():.3f}\nStd  = {metrics['proba_dispersion'].std():.3f}\n\n"
+        f"Selected features:\n{', '.join(cols_to_keep)}\n"
     )
     (out_dir / f"{name}_metrics.txt").write_text(text, encoding="utf-8")
 
@@ -172,6 +173,8 @@ def print_shap_summary(shap_agg):
     )
     print(f"Global feature importance (CatBoost):\n{imp_df.to_markdown()}")
 
+    return summary_df, imp_df
+
 
 # ============================================================
 # 4. Plotting helpers
@@ -184,7 +187,7 @@ def _savefig(fig_or_none, path):
     plt.close("all")
 
 
-def plot_shap_bar(mean_shap_per_patient, X_test_mean, feature_names, name, n_iterations, out_dir):
+def plot_shap_bar(mean_shap_per_patient, X_test_mean, feature_names, name, n_iterations, out_dir, save=True):
     shap.summary_plot(
         mean_shap_per_patient.values,
         X_test_mean,
@@ -193,10 +196,11 @@ def plot_shap_bar(mean_shap_per_patient, X_test_mean, feature_names, name, n_ite
         title=f"Importance SHAP moyenne ({n_iterations} itérations)",
         show=False,
     )
-    _savefig(None, f"{out_dir}/{name}_shap_bar.svg")
+    if save == True:
+        _savefig(None, f"{out_dir}/{name}_shap_bar.svg")
 
 
-def plot_shap_summary(mean_shap_per_patient, X_test_mean, feature_names, name, n_iterations, out_dir):
+def plot_shap_summary(mean_shap_per_patient, X_test_mean, feature_names, name, n_iterations, out_dir, save=True):
     shap.summary_plot(
         mean_shap_per_patient.values,
         X_test_mean,
@@ -204,7 +208,9 @@ def plot_shap_summary(mean_shap_per_patient, X_test_mean, feature_names, name, n
         title=f"Importance SHAP moyenne ({n_iterations} itérations)",
         show=False,
     )
-    _savefig(None, f"{out_dir}/{name}_shap_summary.svg")
+
+    if save == True:
+        _savefig(None, f"{out_dir}/{name}_shap_summary.svg")
 
 
 def plot_shap_by_cohort(
@@ -216,6 +222,7 @@ def plot_shap_by_cohort(
     name,
     out_dir,
     beeswarm_per_group=False,
+    save=True,
 ):
     """
     Generic replacement for the repeated "SHAP by <category>" blocks.
@@ -245,7 +252,8 @@ def plot_shap_by_cohort(
 
     plt.close("all")
     shap.plots.bar(shap_exp.cohorts(groups).abs.mean(0), max_display=len(feature_names), show=False)
-    _savefig(None, f"{out_dir}/{name}_shap_summary_grouped_by_{group_col}.svg")
+    if save == True:
+        _savefig(None, f"{out_dir}/{name}_shap_summary_grouped_by_{group_col}.svg")
 
     if beeswarm_per_group:
         for label in sorted(set(groups)):
@@ -253,12 +261,16 @@ def plot_shap_by_cohort(
             plt.close("all")
             shap.plots.beeswarm(shap_exp[mask], max_display=len(feature_names), show=False)
             plt.title(f"SHAP beeswarm - {group_col} = {label}")
-            _savefig(None, f"{out_dir}/{name}_shap_beeswarm_{group_col}_{label}.svg")
+
+            if save == True:
+                _savefig(None, f"{out_dir}/{name}_shap_beeswarm_{group_col}_{label}.svg")
 
     return shap_exp
 
 
-def plot_feature_importance_bar(mean_feature_imp, std_feature_imp, feature_name_dict, name, n_iterations, out_dir):
+def plot_feature_importance_bar(
+    mean_feature_imp, std_feature_imp, feature_name_dict, name, n_iterations, out_dir, save=True
+):
     pretty_names = [feature_name_dict.get(f, f) for f in mean_feature_imp.index]
     y_pos = np.arange(len(mean_feature_imp))
 
@@ -294,10 +306,11 @@ def plot_feature_importance_bar(mean_feature_imp, std_feature_imp, feature_name_
     xmax = (mean_feature_imp.values + std_feature_imp[mean_feature_imp.index].values).max()
     ax.set_xlim(0, xmax * 1.25)
 
-    _savefig(fig, f"{out_dir}/{name}_feature_importance_from_CB_model.svg")
+    if save == True:
+        _savefig(fig, f"{out_dir}/{name}_feature_importance_from_CB_model.svg")
 
 
-def plot_mean_roc(metrics, name, out_dir):
+def plot_mean_roc(metrics, name, out_dir, save=True):
     mean_fpr = metrics["mean_fpr"]
     mean_tpr = metrics["tprs"].mean(axis=0)
     mean_tpr[-1] = 1.0
@@ -324,7 +337,8 @@ def plot_mean_roc(metrics, name, out_dir):
     ax.set_title(f"ROC curve ({len(metrics['auc'])} iterations)")
     ax.legend(loc="lower right")
 
-    _savefig(fig, f"{out_dir}/{name}_ROC_AUC.svg")
+    if save == True:
+        _savefig(fig, f"{out_dir}/{name}_ROC_AUC.svg")
 
 
 # ============================================================
@@ -332,7 +346,7 @@ def plot_mean_roc(metrics, name, out_dir):
 # ============================================================
 
 
-def run_pipeline(data_path, dict_path, feature_names_path, out_dir="results/catboost_results"):
+def run_pipeline(data_path, dict_path, feature_names_path, out_dir="results/catboost_results", save=True):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     name = Path(dict_path).stem
@@ -351,7 +365,7 @@ def run_pipeline(data_path, dict_path, feature_names_path, out_dir="results/catb
     # --- metrics ---
     metrics = aggregate_metrics(results_dict)
     print_metrics_summary(name, len(results_dict), metrics)
-    save_metrics_text(name, len(results_dict), metrics, out_dir=out_dir)
+    save_metrics_text(name, len(results_dict), metrics, cols_to_keep, out_dir=out_dir)
 
     # --- SHAP aggregation ---
     shap_agg = aggregate_shap(results_dict, cols_to_keep)
@@ -361,8 +375,12 @@ def run_pipeline(data_path, dict_path, feature_names_path, out_dir="results/catb
     feature_names = [feature_name_dict.get(f, f) for f in X_test_mean.columns]
 
     # --- global SHAP plots ---
-    plot_shap_bar(shap_agg["mean_shap_per_patient"], X_test_mean, feature_names, name, len(results_dict), out_dir)
-    plot_shap_summary(shap_agg["mean_shap_per_patient"], X_test_mean, feature_names, name, len(results_dict), out_dir)
+    plot_shap_bar(
+        shap_agg["mean_shap_per_patient"], X_test_mean, feature_names, name, len(results_dict), out_dir, save=save
+    )
+    plot_shap_summary(
+        shap_agg["mean_shap_per_patient"], X_test_mean, feature_names, name, len(results_dict), out_dir, save=save
+    )
 
     # --- SHAP by cohort (replaces 5 copy-pasted blocks) ---
     cohort_specs = [
@@ -395,10 +413,15 @@ def run_pipeline(data_path, dict_path, feature_names_path, out_dir="results/catb
         name,
         len(results_dict),
         out_dir,
+        save=save,
     )
-    plot_mean_roc(metrics, name, out_dir)
+    plot_mean_roc(metrics, name, out_dir, save=save)
 
-    print(f"All figures saved to {out_dir}/")
+    if save == True:
+        print(f"All figures saved to {out_dir}/")
+    else:
+        print("Figures not saved (save=False)")
+
     return {"metrics": metrics, "shap_agg": shap_agg, "name": name}
 
 
