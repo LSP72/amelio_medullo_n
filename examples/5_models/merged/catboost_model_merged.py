@@ -74,6 +74,8 @@ def save_dict(results_dict, output_path, num):
     with open(pickle_file_name, "wb") as file:
         pkl.dump(results_dict, file)
 
+    print(f"Results saved to {pickle_file_name}")
+
 
 def shap_plot(shap_values, X_test):
     shap.summary_plot(shap_values, X_test, plot_type="bar", title="Importance globale (SHAP)")
@@ -85,8 +87,12 @@ def shap_plot(shap_values, X_test):
     #     )
 
 
-def main(data_path, cols_to_keep, random_state_list, output_path, num=True):
+def main(data_path, cols_to_keep, random_state_list, output_path, filter_cond=None, num=True):
     data = pd.read_excel(data_path)
+    if filter_cond is not None:
+        data = data[data["Neurol_cond"] == filter_cond]
+        print("* " * 36)
+        print(f"Model trained on {filter_cond} patients only. Number of patients: {len(data)}")
     if num == True:
         data["Neurol_cond"] = data["Neurol_cond"].replace(["BM", "AVC", "Autre"], [1, 2, 3])
         data["Sex"] = data["Sex"].replace(["M", "F"], [1, 2])
