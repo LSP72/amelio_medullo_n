@@ -164,4 +164,4 @@ def main(pkl_path, csv_out=None, pos_label=POS_LABEL):
 if __name__ == "__main__":
     PKL_PATH = "results/catboost_results/merged_data/selected_features_with_no_fuite/catboost_results_merged_data_selected_features_with_no_fuite.pkl"
     csv_out = "/results/catboost_results/catboost_metrics_per_split.csv"
-    main(PKL_PATH, pos_label=1)
+    main(PKL_PATH, csv_out=csv_out, pos_label=1)
