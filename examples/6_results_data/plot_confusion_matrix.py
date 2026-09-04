@@ -7,6 +7,7 @@ au minimum les clés "true_values" (y_test) et "predictions" (y_pred).
 
 import numpy as np
 import pickle as pkl
+from datetime import datetime
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 
@@ -63,6 +64,10 @@ def plot_matrice_confusion_moyenne(
         ylabel="True Value",
         title=title,
     )
+    ax.tick_params(labelsize=14)
+    ax.xaxis.label.set_size(14)
+    ax.yaxis.label.set_size(14)
+    ax.title.set_size(14)
     plt.setp(ax.get_yticklabels(), rotation=90, va="center")
 
     fmt = ".2f" if normalize == "true" else ".1f"
@@ -75,18 +80,26 @@ def plot_matrice_confusion_moyenne(
                 f"{mean_cm[i, j]:{fmt}} ± {std_cm[i, j]:{fmt}}",
                 ha="center",
                 va="center",
-                color="white" if mean_cm[i, j] > seuil else "black",
+                color="black" if mean_cm[i, j] > seuil else "white",
+                fontweight="bold",
+                fontsize=15,
             )
 
     fig.tight_layout()
     return fig, ax
 
 
-def main(results):
+def main(results, output_path=None):
     # Comptages bruts (ce que tu as demandé) :
     mean_cm, std_cm = matrices_confusion(results, labels=(0, 1), normalize=None)
     fig, ax = plot_matrice_confusion_moyenne(mean_cm, std_cm, normalize=None)
     plt.show()
+
+    if output_path:
+        date = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_name = output_path + f"mean_confusion_matrix_{date}.svg"
+        fig.savefig(output_name, dpi=300, bbox_inches="tight")
+        print(f"plot saved in {output_name}")
 
     # Variante en taux (si splits non stratifiés) :
     # mean_cm, std_cm = matrices_confusion(results, labels=(0, 1), normalize="true")
@@ -96,12 +109,14 @@ def main(results):
 
 if __name__ == "__main__":
     # --- Exemple d'utilisation ---
-    data_path = "results/catboost_results/profile_data/selected_features_with_no_fuite/catboost_results_separated_sessions_is_True_selected_features_with_no_fuite.pkl"
-    # data_path = "results/catboost_results/merged_data/selected_features_with_no_fuite/catboost_results_merged_data_selected_features_with_no_fuite.pkl"
+    # data_path = "results/catboost_results/profile_data/selected_features_with_no_fuite/catboost_results_separated_sessions_is_True_selected_features_with_no_fuite.pkl"
+    data_path = "results/catboost_results/merged_data/selected_features_with_no_fuite/catboost_results_merged_data_selected_features_with_no_fuite.pkl"
     with open(data_path, "rb") as file:
         results = pkl.load(file)
 
-    main(results)
+    output_path = "results/catboost_results/"
+
+    main(results, output_path=output_path)
 
     # Rappel de l'ordre des cases (labels=[0,1]) :
     #   mean_cm[0,0] = TN | mean_cm[0,1] = FP

@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 import shap
 from catboost import CatBoostClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, ConfusionMatrixDisplay, roc_auc_score
+from sklearn.metrics import classification_report, ConfusionMatrixDisplay, roc_auc_score, f1_score
 from amelio_medullo import Calculus, DataCleaning
 import pickle as pkl
 
 
-def train_and_test(X, y, rdm_state):
+def train_and_test_catboost(X, y, rdm_state):
     # Automatically detect categorical column
     cat_features = [col for col in X.columns if X[col].dtype == "object"]
 
@@ -22,18 +22,18 @@ def train_and_test(X, y, rdm_state):
     model = CatBoostClassifier(
         iterations=500,
         # learning_rate=0.06,
-        depth=6,
+        depth=4,
         eval_metric="AUC",
         cat_features=cat_features,
         random_seed=42,
         verbose=100,
     )
 
-    model.fit(X_train, y_train, eval_set=(X_test, y_test), early_stopping_rounds=50)  # stopping if no improvement
-
+    model.fit(X_train, y_train)  # stopping if no improvement
+    # eval_set=(X_test, y_test) Fuite de données possible ici
     feature_imp_df = model.get_feature_importance(prettified=True)
 
-    # ── 3. Validation ────────────────────────────────────────────────────────────
+    # ── 3. Evaluation ────────────────────────────────────────────────────────────
     y_pred = model.predict(X_test)
     y_pred_proba = model.predict_proba(X_test)[:, 1]
     auc_test = roc_auc_score(y_test, y_pred_proba)
@@ -64,25 +64,44 @@ def train_and_test(X, y, rdm_state):
         "true_values": y_test,
         "shap_values": shap_values,
         "model_fts_imp": feature_imp_df,
+        "f1_score": f1_score(y_test, y_pred),
+        "classif_report": classification_report(y_test, y_pred),
     }
 
 
 def save_dict(results_dict, output_path, num):
-    pickle_file_name = f"{output_path}/catboost_results_merged_data_selected_features_perso_removed_numerical_is_{num}_100it_with_shap_corr_removed.pkl"
+    pickle_file_name = f"{output_path}/catboost_results_merged_data_selected_features_with_no_fuite.pkl"
     with open(pickle_file_name, "wb") as file:
         pkl.dump(results_dict, file)
 
+    print(f"Results saved to {pickle_file_name}")
 
-def main(data_path, cols_to_keep, random_state_list, output_path, num=True):
+
+def shap_plot(shap_values, X_test):
+    shap.summary_plot(shap_values, X_test, plot_type="bar", title="Importance globale (SHAP)")
+    # shap.summary_plot(
+    #         shap_values,
+    #         X_test,
+    #         plot_size=(8, 10),
+    #         show=True,
+    #     )
+
+
+def main(data_path, cols_to_keep, random_state_list, output_path, filter_cond=None, num=True):
     data = pd.read_excel(data_path)
+    if filter_cond is not None:
+        data = data[data["Neurol_cond"] == filter_cond]
+        print("* " * 36)
+        print(f"Model trained on {filter_cond} patients only. Number of patients: {len(data)}")
     if num == True:
         data["Neurol_cond"] = data["Neurol_cond"].replace(["BM", "AVC", "Autre"], [1, 2, 3])
         data["Sex"] = data["Sex"].replace(["M", "F"], [1, 2])
-        data.apply(DataCleaning.lesion_level_to_num, axis=1)
-    y = data["6MWT_M_post"]
+    data = data.apply(DataCleaning.lesion_level_to_num, axis=1)
     X = data[cols_to_keep]
+    y = data["MCID_classes"]
     results_dict = {}
     for rdm_state in random_state_list:
+        print(f"Split number: {rdm_state}")
         results_dict[rdm_state] = train_and_test_catboost(X, y, rdm_state)
         results_dict[rdm_state]["list_of_features"] = cols_to_keep
 
@@ -90,7 +109,41 @@ def main(data_path, cols_to_keep, random_state_list, output_path, num=True):
 
 
 if __name__ == "__main__":
-    data_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/data/datasets/final/merged_data_final.xlsx"
+    data_path = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/merged_data_final.xlsx"
+    # All features
+    cols_to_keep_all = [
+        "nb_sessions",
+        "duration",
+        "Distance_m",
+        "Distance_pas",
+        "Durée_min",
+        "Vitesse_kmh_MIN",
+        "Vitesse_kmh_MAX",
+        "Vitesse_kmh_MOY",
+        "BWS_%_MIN",
+        "BWS_%_MAX",
+        "BWS_%_MOY",
+        "BWS_kg_MIN",
+        "BWS_kg_MAX",
+        "BWS_kg_MOY",
+        "Guidage_G_%_MIN",
+        "Guidage_G_%_MAX",
+        "Guidage_G_%_MOY",
+        "Guidage_D_%_MIN",
+        "Guidage_D_%_MAX",
+        "Guidage_D_%_MOY",
+        "sessions_per_week",
+        "6MWT_m_pre",
+        "Neurol_cond",
+        "Sex",
+        "Age",
+        "Nb sessions",
+        "delay_injury",
+        "delay_loko",
+        "functional_level",
+        "Lesion_num",
+        "BMI",
+    ]
     # cols_to_keep_0 = [
     #     "nb_sessions",	"duration",	"Durée_min", "Vitesse_kmh_MOY", "BWS_%_MOY", "cadence", "step_length",
     #     "Guidage_%_MOY", "sessions_per_week", "6MWT_m_pre", "Neurol_cond", "Sex", "Age", "Nb sessions",
@@ -133,7 +186,50 @@ if __name__ == "__main__":
         "Lesion_num",
         "BMI",
     ]
+    # features for loko intervention only after lasso
+    cols_to_keep_3 = ["nb_sessions", "BWS_%_MOY", "Guidage_%_MOY", "6MWT_m_pre", "cadence"]  # ajoutée manuellement
+    # Selected features after LASSO stabilised
+    cols_to_keep_4 = [
+        "Nb sessions",
+        "Neurol_cond",
+        "Sex",
+        "BWS_%_MOY",
+        "sessions_per_week",
+        "Guidage_%_MOY",
+        "Durée_min",
+    ]
+    # Selected features after profile analyses
+    cols_to_keep_5 = [
+        "nb_sessions",
+        "duration",
+        "Durée_min",
+        "Vitesse_kmh_MOY",
+        "BWS_%_MOY",
+        "step_length",
+        "Guidage_%_MOY",
+        "sessions_per_week",
+        "Neurol_cond",
+        # "Sex",
+        # "Nb sessions",
+        "BMI",
+        # "cadence"
+    ]
+    cols_to_keep_5_b = [
+        # "nb_sessions",
+        "duration",
+        "Durée_min",
+        "Vitesse_kmh_MOY",
+        "BWS_%_MOY",
+        "step_length",
+        "Guidage_%_MOY",
+        "sessions_per_week",
+        "Neurol_cond",
+        "Sex",
+        "Nb sessions",
+        "BMI",
+        # "cadence"
+    ]
     # random_state_list = [42, 72]
     random_state_list = np.arange(1, 101)
     output_path = "results/catboost_results/merged_data"
-    main(data_path, cols_to_keep_2, random_state_list, output_path, num=False)
+    main(data_path, cols_to_keep_5_b, random_state_list, output_path, num=False)

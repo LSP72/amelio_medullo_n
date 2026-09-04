@@ -6,8 +6,8 @@ from tkinter import filedialog
 from amelio_medullo import DataCleaning
 
 
-def plot_and_save_corr_matrix(data, output_name, output_file_path):
-    correlation_matrix = data.corr(numeric_only=True)
+def plot_and_save_corr_matrix(data, output_name, output_file_path, corr_method="pearson"):
+    correlation_matrix = data.corr(numeric_only=True, method=corr_method)
     plt.figure(figsize=(16, 12))
 
     sns.heatmap(
@@ -21,7 +21,7 @@ def plot_and_save_corr_matrix(data, output_name, output_file_path):
     plt.show()
 
 
-def main(file_path, cols_to_keep, output_name, output_file_path, num=True):
+def main(file_path, cols_to_keep, output_name, output_file_path, corr_method="pearson", num=True):
     data = pd.read_excel(file_path)
     data_kept = data[cols_to_keep]
     if num:
@@ -29,7 +29,7 @@ def main(file_path, cols_to_keep, output_name, output_file_path, num=True):
         data["Sex"] = data["Sex"].replace(["M", "F"], [1, 2])
         data.apply(DataCleaning.lesion_level_to_num, axis=1)
 
-    plot_and_save_corr_matrix(data_kept, output_name, output_file_path)
+    plot_and_save_corr_matrix(data_kept, output_name, output_file_path, corr_method=corr_method)
 
 
 if __name__ == "__main__":
@@ -160,8 +160,33 @@ if __name__ == "__main__":
         "functional_level",
         "Lesion_num",
         "BMI",
+        "cadence",
     ]
-    output_name = "merged_selected_features_1"
+
+    # DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/final_data_matrix_sessions_separated.xlsx"
+    DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/merged_data_final.xlsx"
+
+    # Features to test.
+    # FEATURES = [
+    #     "Neurol_cond", "Lesion_num", "Nb sessions", "Sex", "Age", "BMI",
+    #     "6MWT_m_pre", "10MWT_pas_pre", "10MWT_sec_pre", "delay_injury",
+    #     "delay_loko", "functional_level", "speed",
+    # ]
+    FEATURES = [
+        "duration",
+        "Durée_min",
+        "Vitesse_kmh_MOY",
+        "BWS_%_MOY",
+        "step_length",
+        "Guidage_%_MOY",
+        "sessions_per_week",
+        "Neurol_cond",
+        "Sex",
+        "Nb sessions",
+        "BMI",
+    ]
+
+    output_name = "profile_selected_features_Spearman"
     output_file_path = "results/data_exploration/correlation_matrices/"
 
-    main(file_path, cols_to_keep_loko_3, output_name, output_file_path)
+    main(DATA_PATH, FEATURES, output_name, output_file_path, corr_method="spearman", num=True)

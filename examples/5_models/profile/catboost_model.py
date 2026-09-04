@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import shap
+from datetime import datetime
 from catboost import CatBoostClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, ConfusionMatrixDisplay, roc_auc_score, f1_score
@@ -71,11 +72,10 @@ def train_and_test_catboost(X, y, rdm_state):
     }
 
 
-def save_dict(results_dict, output_path, separated_sessions=True):
+def save_dict(results_dict, output_path):
+    date = datetime.now().strftime("%Y%m%d_%H%M%S")
     pickle_file_name = (
-        output_path
-        + "/monte_carlo/catboost_results_separated_sessions_wout_delay_injury"
-        + "_selected_features_by_combi.pkl"
+        output_path + "/monte_carlo/catboost_results_separated_sessions" + "Spearman_w_6mwt_" + date + ".pkl"
     )
     with open(pickle_file_name, "wb") as file:
         pkl.dump(results_dict, file)
@@ -91,11 +91,8 @@ def shap_plot(shap_values, X_test):
     #     )
 
 
-def main(data_path, cols_to_keep, random_state_list, output_path, num=True):
+def main(data_path, cols_to_keep, random_state_list, output_path, per_condition=False):
     data = pd.read_excel(data_path)
-    if num == True:
-        data["Neurol_cond"] = data["Neurol_cond"].replace(["BM", "AVC", "Autre"], [1, 2, 3])
-        data["Sex"] = data["Sex"].replace(["M", "F"], [1, 2])
     data = data.apply(DataCleaning.lesion_level_to_num, axis=1)
     # if "speed" in data.columns.to_list():
     #     data["speed"].replace([np.inf, -np.inf], np.nan, inplace=True)
@@ -103,12 +100,25 @@ def main(data_path, cols_to_keep, random_state_list, output_path, num=True):
     # if "10MWT_pas_pre" in X.columns.to_list():
     #     X[["10MWT_pas_pre", "10MWT_sec_pre"]].replace([np.nan], ["missing"], inplace=True)
     y = Calculus.calculate_MCID_2(data, default_threshold=45)
-    results_dict = {}
-    for rdm_state in random_state_list:
-        results_dict[rdm_state] = train_and_test_catboost(X, y["MCID_classes"], rdm_state)
-        results_dict[rdm_state]["list_of_features"] = cols_to_keep
+    if per_condition == True:
+        for cond in ["AVC", "BM"]:
+            print(f"\n\n\nProcessing condition: {cond}")
+            cond_filter = data["Neurol_cond"] == cond
+            X = X[cond_filter].copy()
+            y = y[cond_filter].values
+            results_dict = {}
+        for rdm_state in random_state_list:
+            results_dict[rdm_state] = train_and_test_catboost(X, y["MCID_classes"], rdm_state)
+            results_dict[rdm_state]["list_of_features"] = cols_to_keep
+            save_dict(results_dict, output_path)
 
-    save_dict(results_dict, output_path)
+    else:
+        results_dict = {}
+        for rdm_state in random_state_list:
+            results_dict[rdm_state] = train_and_test_catboost(X, y["MCID_classes"], rdm_state)
+            results_dict[rdm_state]["list_of_features"] = cols_to_keep
+
+        save_dict(results_dict, output_path)
 
 
 if __name__ == "__main__":
@@ -130,16 +140,12 @@ if __name__ == "__main__":
         # "delay_injury",
         "delay_loko",
         "functional_level",
-        "speed",
+        # "speed",
     ]
-    # cols_to_keep = ["Neurol_cond",
-    #     "Lesion_num",
+    # cols_to_keep = [
     #     "Nb sessions",
-    #     "Sex",
-    #     "BMI",
     #     "6MWT_m_pre",
-    #     "delay_injury",
-    #     "functional_level",
+    #     "delay_loko",
     #     "speed",
     # ]
     # cols_to_keep = ['Neurol_cond', 'Sex', 'Age', 'BMI', '6MWT_m_pre', '10MWT_pas_pre', '10MWT_sec_pre', 'delay_injury', 'delay_loko', 'functional_level', 'Artic_hip_flex', 'Artic_hip_abd', 'Ank_flex_90', 'Ank_flex_180', 'H_abd', 'Lesion_num']
@@ -147,4 +153,4 @@ if __name__ == "__main__":
     random_state_list = np.arange(1, 101)
     # random_state_list = np.random.randint(0, 100, size=30)
     output_path = "results/catboost_results/profile_data"
-    main(data_path, cols_to_keep, random_state_list, num=False, output_path=output_path)
+    main(data_path, cols_to_keep, random_state_list, output_path=output_path, per_condition=False)
