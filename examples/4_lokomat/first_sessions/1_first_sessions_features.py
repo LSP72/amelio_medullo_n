@@ -48,7 +48,7 @@ def fit_stat(blocks):
     block_results = []
 
     for i, (sessions, values) in enumerate(blocks):
-        X = np.array(sessions)
+        X = np.arange(len(sessions))
         y = np.array(values)
         n = len(y)
 
@@ -141,6 +141,16 @@ def main(data_path, feature_list, output_dir, id_col="ID", patient_blocks=None, 
 
     save_results_to_excel(
         results_dict, os.path.join(output_dir, f"fits_over_first_{nb_sessions}_sessions_{timestamp}.xlsx")
+    )
+    print(f"Results saved to {os.path.join(output_dir, f'fits_over_first_{nb_sessions}_sessions_{timestamp}.xlsx')}\n")
+    print("====== ! ! ! ! ! ! =====")
+    print("====== ! WARNING ! =====")
+    print("====== ! ! ! ! ! ! =====")
+    print(
+        "This code generated new id for patients who had several blocks of Lokomat."
+        "Those id are not the same as the ones in the data file."
+        "Please check that the new id are correct and match the ones in the following data file:"
+        "id_with_classifications_date.xlsx."
     )
 
 
