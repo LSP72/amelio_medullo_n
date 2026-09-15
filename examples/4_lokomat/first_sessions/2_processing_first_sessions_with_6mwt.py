@@ -11,7 +11,7 @@ from amelio_medullo import Calculus
 def load_data(data_path):
     return pd.read_excel(data_path)
 
-def adjust_ipp_multiple_patients(data, loko_data):
+def adjust_ipp_multiple_patients(loko_data):
     """This function enables to adjust the IPPs from the loko_data files to match
     the ones from the data one in a specific case.
        This functions is only usable when a patient had followed several blocks of Lokomat.
@@ -62,8 +62,8 @@ def main(loko_path, data_path, other_mcid_threshold, output_path=None):
 #%% ===== MAIN =====
 
 if __name__ == "__main__":
-    loko_path = "results/loko_results/fits_over_first_5_sessions.xlsx"
-    data_path = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/id_patients_with_classifications.xlsx"
-    output_path = "results/complete_data_with_mcids.xlsx"
+    loko_path = "results/loko_results/fits_over_first_8_sessions_2026-09-04_18-16-33.xlsx"
+    data_path = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/id_patients_with_classifications_2026-09-01_17-47-04.xlsx"
+    output_path = "results/complete_data_with_mcids_8_sessions.xlsx"
 
     main(loko_path, data_path, other_mcid_threshold=45, output_path=output_path)
