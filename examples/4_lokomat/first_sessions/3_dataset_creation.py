@@ -42,23 +42,25 @@ def merge_3rd_session(all_reports_data, data, variable_list):
                 print(f"ID {id} not found in 'data'")
     return data
 
-def main(data_path, all_reports_data_path, variable_list=["Vitesse_kmh", "BWS_%"]):
+def main(data_path, all_reports_data_path, nb_sessions, variable_list=["Vitesse_kmh", "BWS_%"]):
     data = pd.read_excel(data_path)
     all_reports_data = pd.read_excel(all_reports_data_path)
+    all_reports_data["Guidage_%_MOY"] = all_reports_data[["Guidage_G_%_MOY", "Guidage_D_%_MOY"]].mean(axis=1)
     clean_data = put_regression_info_in_line(data)
     merged_data = merge_3rd_session(all_reports_data, clean_data, variable_list)
 
-    merged_data.to_excel("results/loko_results/fits_over_first_5_sessions_with_3rd_session.xlsx", index=True)
+    merged_data.to_excel(f"results/loko_results/fits_over_first_{nb_sessions}_sessions_with_3rd_session.xlsx", index=True)
     
     print(merged_data.to_markdown())
 
 if __name__ == "__main__":
-    data_path = "results/loko_results/fits_over_first_5_sessions.xlsx"
+    nb_sessions = 8
+    data_path = f"results/loko_results/complete_data_with_mcids_{nb_sessions}_sessions.xlsx"
     root = tk.Tk()
     root.withdraw()
     all_reports_data_path = filedialog.askopenfilename(
-        title="Select a File",
+        title="Select the Excel file containing all the Lokomat reports data",
         filetypes=[("Excel Files", "*.xlsx"), ("All Files", "*.*")]
     )
-    variable_list = ["Vitesse_kmh", "BWS_%"]
-    main(data_path, all_reports_data_path, variable_list)
+    variable_list = ["Vitesse_kmh", "BWS_%", "Guidage_%"]
+    main(data_path, all_reports_data_path, nb_sessions, variable_list)
