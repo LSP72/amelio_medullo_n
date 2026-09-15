@@ -61,6 +61,18 @@ class Explo:
 
     @staticmethod
     def info_about_endurance(df_improvements, neurol_cond=""):
+        """
+        This function returns the means, sd, min, max, median & quantiles
+        for the people who have improved in the 6MWT (Δ6MWT > 0) for a given neurological condition.
+
+        Parameters
+        ----------
+        df_improvements : Series
+            This is a pandas Series containing the improvements in 6MWT for the patients who have improved (Δ6MWT > 0).
+            It has to be already set, i.e., conditioned on the neurological condition and the improvement in 6MWT.
+        neurol_cond : str, optional
+            Only used for printing the neurological condition, by default ""
+        """
 
         mean_improvements = df_improvements.mean()
         min_improvements = df_improvements.min()

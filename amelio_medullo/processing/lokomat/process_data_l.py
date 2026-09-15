@@ -114,6 +114,8 @@ class ProcessDataLokomat:
             data.groupby("Date")
             .agg(
                 {
+                    "Session(s)": "min",
+                    "Type": "first",
                     "Distance_m": "sum",
                     "Distance_pas": "sum",
                     "Durée_min": "sum",

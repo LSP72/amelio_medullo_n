@@ -33,11 +33,11 @@ def main(file_path, cols_to_keep, output_name, output_file_path, corr_method="pe
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    root.withdraw()  # Hide the main window
-    file_path = filedialog.askopenfilename(
-        title="Select a file", filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")]
-    )
+    # root = tk.Tk()
+    # root.withdraw()  # Hide the main window
+    # file_path = filedialog.askopenfilename(
+    #     title="Select a file", filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")]
+    # )
     cols_to_keep_profile_1 = [
         "Sex",
         "Age",
@@ -163,8 +163,8 @@ if __name__ == "__main__":
         "cadence",
     ]
 
-    # DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/final_data_matrix_sessions_separated.xlsx"
-    DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/merged_data_final.xlsx"
+    DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/final_data_matrix_sessions_separated.xlsx"
+    # DATA_PATH = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/merged_data_final.xlsx"
 
     # Features to test.
     # FEATURES = [
@@ -185,8 +185,23 @@ if __name__ == "__main__":
         "Nb sessions",
         "BMI",
     ]
+    cols_to_keep_profile_bis = [
+        "Sex",
+        "Age",
+        "Height",
+        "Weight",
+        "BMI",
+        "6MWT_m_pre",
+        "6MWT_m_post",
+        "10MWT_pas_pre",
+        "10MWT_sec_pre",
+        "speed",
+        "delay_injury",
+        "delay_loko",
+        "functional_level",
+    ]
 
     output_name = "profile_selected_features_Spearman"
     output_file_path = "results/data_exploration/correlation_matrices/"
 
-    main(DATA_PATH, FEATURES, output_name, output_file_path, corr_method="spearman", num=True)
+    main(DATA_PATH, cols_to_keep_profile_bis, output_name, output_file_path, corr_method="spearman", num=True)

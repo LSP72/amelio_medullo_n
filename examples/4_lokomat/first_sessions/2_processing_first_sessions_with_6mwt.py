@@ -8,8 +8,10 @@ from amelio_medullo import Calculus
     n sessions of Lokomat training for each patient.
 """
 
+
 def load_data(data_path):
     return pd.read_excel(data_path)
+
 
 def adjust_ipp_multiple_patients(loko_data):
     """This function enables to adjust the IPPs from the loko_data files to match
@@ -28,7 +30,7 @@ def adjust_ipp_multiple_patients(loko_data):
     loko_data : dataframe
         Dataframe containing the Lokomat data for each patient for their first sessions.
     """
-    
+
     for index, row in loko_data.iterrows():
         ipp = row["ID"]
         print(f"ID: {ipp}")
@@ -40,6 +42,7 @@ def adjust_ipp_multiple_patients(loko_data):
             loko_data.loc[index, "ID"] = new_ipp
 
     return loko_data
+
 
 def main(loko_path, data_path, other_mcid_threshold, output_path=None):
     # 1 - load data
@@ -59,7 +62,7 @@ def main(loko_path, data_path, other_mcid_threshold, output_path=None):
     print(complete_data.to_markdown())
 
 
-#%% ===== MAIN =====
+# %% ===== MAIN =====
 
 if __name__ == "__main__":
     loko_path = "results/loko_results/fits_over_first_8_sessions_2026-09-04_18-16-33.xlsx"

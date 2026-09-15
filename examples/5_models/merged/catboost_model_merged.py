@@ -70,7 +70,7 @@ def train_and_test_catboost(X, y, rdm_state):
 
 
 def save_dict(results_dict, output_path, num):
-    pickle_file_name = f"{output_path}/catboost_results_merged_data_selected_features_with_no_fuite.pkl"
+    pickle_file_name = f"{output_path}/catboost_results_merged_data.pkl"
     with open(pickle_file_name, "wb") as file:
         pkl.dump(results_dict, file)
 
@@ -229,6 +229,23 @@ if __name__ == "__main__":
         "BMI",
         # "cadence"
     ]
+
+    training_cols = [
+        # "nb_sessions",
+        "duration",
+        "Durée_min",
+        "Vitesse_kmh_MOY",
+        "BWS_%_MOY",
+        "step_length",
+        "Guidage_%_MOY",
+        "sessions_per_week",
+        # "Neurol_cond",
+        # "Sex",
+        # "Nb sessions",
+        # "BMI",
+        # "cadence"
+    ]
+
     # random_state_list = [42, 72]
     random_state_list = np.arange(1, 101)
     output_path = "results/catboost_results/merged_data"

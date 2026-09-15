@@ -12,10 +12,12 @@ import datetime
 
 """
 
-#%% ===== Auxiliary functions =====
+
+# %% ===== Auxiliary functions =====
 def loading_data(data_path):
     all_reports = pd.read_excel(data_path)
     return all_reports
+
 
 def _split_into_blocks(group_sorted, block_sizes):
     """Split a patient's sorted sessions into consecutive blocks of the given sizes.
@@ -35,10 +37,12 @@ def _split_into_blocks(group_sorted, block_sizes):
         blocks.append(group_sorted.iloc[start:])
     return blocks
 
+
 def _add_to_dict(ID, feature, block_results, results_dict):
     if ID not in results_dict:
         results_dict[ID] = {}
     results_dict[ID][feature] = block_results
+
 
 def fit_stat(blocks):
     block_results = []
@@ -56,17 +60,24 @@ def fit_stat(blocks):
         intercept = fit.params[0]
         y_pred = fit.fittedvalues
 
-        block_results.append({
-            "block": i + 1, "n": n,
-            "slope": slope, "slope_se": se_slope,
-            "slope_ci_low": ci_low, "slope_ci_high": ci_high,
-            "slope_p": p_slope,
-            "intercept": intercept, "r2": r2,
-            "y_pred": y_pred
-        })
+        block_results.append(
+            {
+                "block": i + 1,
+                "n": n,
+                "slope": slope,
+                "slope_se": se_slope,
+                "slope_ci_low": ci_low,
+                "slope_ci_high": ci_high,
+                "slope_p": p_slope,
+                "intercept": intercept,
+                "r2": r2,
+                "y_pred": y_pred,
+            }
+        )
 
     return block_results
-    
+
+
 def save_results_to_excel(results_dict, output_path):
     rows = []
     for ID, features in results_dict.items():
@@ -82,7 +93,7 @@ def save_results_to_excel(results_dict, output_path):
                         "Intercept": block["intercept"],
                         "R2": block["r2"],
                         "Nb of sessions": block["n"],
-                        "Predictions": block["y_pred"]
+                        "Predictions": block["y_pred"],
                     }
                 )
 
@@ -90,8 +101,9 @@ def save_results_to_excel(results_dict, output_path):
     results_df.to_excel(output_path, index=False)
     print(f"Results saved to {output_path}")
 
-#%% ===== Main function =====
-def main(data_path, feature_list, output_dir, id_col='ID', patient_blocks=None, nb_sessions=None):
+
+# %% ===== Main function =====
+def main(data_path, feature_list, output_dir, id_col="ID", patient_blocks=None, nb_sessions=None):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     all_reports = loading_data(data_path)
@@ -127,10 +139,12 @@ def main(data_path, feature_list, output_dir, id_col='ID', patient_blocks=None, 
 
             _add_to_dict(patient_id, feature, block_results, results_dict)
 
-    save_results_to_excel(results_dict, os.path.join(output_dir, f"fits_over_first_{nb_sessions}_sessions_{timestamp}.xlsx"))
+    save_results_to_excel(
+        results_dict, os.path.join(output_dir, f"fits_over_first_{nb_sessions}_sessions_{timestamp}.xlsx")
+    )
 
 
-#%% ===== MAIN =====
+# %% ===== MAIN =====
 
 if __name__ == "__main__":
     data_path = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/lokomat_reports/all_reports.xlsx"
@@ -152,8 +166,7 @@ if __name__ == "__main__":
         30312319: [3, 13, 24, 17],
         30528453: [21, 19],
         31022187: [20, 20],
-        32548837: [21, 20]
+        32548837: [21, 20],
     }
-    
-    main(data_path, feature_list, output_dir, patient_blocks=patient_blocks, nb_sessions=8)
 
+    main(data_path, feature_list, output_dir, patient_blocks=patient_blocks, nb_sessions=8)

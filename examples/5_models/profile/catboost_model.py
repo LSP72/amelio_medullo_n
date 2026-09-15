@@ -74,9 +74,7 @@ def train_and_test_catboost(X, y, rdm_state):
 
 def save_dict(results_dict, output_path):
     date = datetime.now().strftime("%Y%m%d_%H%M%S")
-    pickle_file_name = (
-        output_path + "/monte_carlo/catboost_results_separated_sessions" + "Spearman_w_6mwt_" + date + ".pkl"
-    )
+    pickle_file_name = output_path + "/monte_carlo/catboost_results_separated_sessions" + date + ".pkl"
     with open(pickle_file_name, "wb") as file:
         pkl.dump(results_dict, file)
 
@@ -140,8 +138,19 @@ if __name__ == "__main__":
         # "delay_injury",
         "delay_loko",
         "functional_level",
-        # "speed",
+        "speed",
     ]
+    # cols_4_08_26 = [
+    #     "Neurol_cond",
+    #     "Nb sessions",
+    #     "Sex",
+    #     "BMI",
+    #     # "6MWT_m_pre",
+    #     "delay_loko",
+    #     "functional_level",
+    #     "speed",
+    #     "Age",
+    # ]
     # cols_to_keep = [
     #     "Nb sessions",
     #     "6MWT_m_pre",
