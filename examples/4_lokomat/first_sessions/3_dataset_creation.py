@@ -32,25 +32,31 @@ def put_regression_info_in_line(data):
     print(df)
     return df
 
-def merge_3rd_session(all_reports_data, data, variable_list):
-    
-    for id, subdf in all_reports_data.groupby("ID"):
-            if id in data.index:
-                for variable in variable_list:
-                    data.loc[id, f"{variable}_3rd"] = subdf.iloc[2][f"{variable}_MOY"].astype(float)
-            else:
-                print(f"ID {id} not found in 'data'")
+def merge_3rd_session(all_reports_data, data, variable_list, blocks):
+
+    for id in data.index.tolist():
+        nb_seances = 2  # Default value for the session to extract, i.e., the 3rd session 
+        if id > 10**9:  # Check if the ID is greater than 10^9 => would mean that the patient had several blocks of Lokomat and that the ID has been adjusted in the data file
+            block = int(str(id)[-1])  # Get the last digit of the ID, which corresponds to the block number
+            true_id = int(str(id)[:-5])  # Remove the last 5 digits to get the original ID
+            for i in range(int(block) - 1):
+                nb_seances += blocks[true_id][i]  # Add the number of sessions in the previous blocks to get the correct index for the 3rd session of the current block
+            print(f"> {true_id} had followed several blocks: processing block n°{block}")
+
+        subdf = all_reports_data.groupby("ID").get_group(true_id if id > 10**9 else id).sort_values("Session(s)")
+
+        for variable in variable_list:
+            data.loc[id, f"{variable}_3rd"] = subdf.iloc[nb_seances][f"{variable}_MOY"].astype(float)
     return data
 
-def main(data_path, all_reports_data_path, nb_sessions, variable_list=["Vitesse_kmh", "BWS_%"]):
+def main(data_path, all_reports_data_path, nb_sessions, variable_list=["Vitesse_kmh", "BWS_%"], patient_blocks=None):
     data = pd.read_excel(data_path)
     all_reports_data = pd.read_excel(all_reports_data_path)
     all_reports_data["Guidage_%_MOY"] = all_reports_data[["Guidage_G_%_MOY", "Guidage_D_%_MOY"]].mean(axis=1)
     clean_data = put_regression_info_in_line(data)
-    merged_data = merge_3rd_session(all_reports_data, clean_data, variable_list)
+    merged_data = merge_3rd_session(all_reports_data, clean_data, variable_list, patient_blocks)
 
     merged_data.to_excel(f"results/loko_results/fits_over_first_{nb_sessions}_sessions_with_3rd_session.xlsx", index=True)
-    
     print(merged_data.to_markdown())
 
 if __name__ == "__main__":
@@ -63,4 +69,18 @@ if __name__ == "__main__":
         filetypes=[("Excel Files", "*.xlsx"), ("All Files", "*.*")]
     )
     variable_list = ["Vitesse_kmh", "BWS_%", "Guidage_%"]
-    main(data_path, all_reports_data_path, nb_sessions, variable_list)
+
+    patient_blocks = {
+            5750370: [19, 20],
+            20047255: [20, 19],
+            24190250: [16, 18],
+            25801189: [17, 20],
+            27522095: [20, 8, 19, 20, 22, 8],
+            28373638: [5, 13, 5, 4, 6],
+            30312319: [3, 13, 24, 17],
+            30528453: [21, 19],
+            31022187: [20, 20],
+            32548837: [21, 20],
+        }
+    
+    main(data_path, all_reports_data_path, nb_sessions, variable_list, patient_blocks)
