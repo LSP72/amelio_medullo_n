@@ -17,6 +17,7 @@ def split_into_blocks(group_sorted, block_sizes):
     """
     blocks = []
     start = 0
+
     for size in block_sizes:
         blocks.append(group_sorted.iloc[start : start + size])
         start += size
@@ -45,12 +46,30 @@ def plot_patient_regression(blocks, patient_id, feature, output_dir):
         intercept = model.intercept_
         r2 = r2_score(y, y_pred)
 
+        n = len(y)
+        if n > 2:
+            sse = np.sum((y - y_pred) ** 2)
+            sxx = np.sum((X.ravel() - X.mean()) ** 2)
+            slope_se = np.sqrt(sse / (n - 2) / sxx)
+        else:
+            slope_se = np.nan
+
         label = f"Block {i + 1}" if len(blocks) > 1 else "Sessions"
         ax.scatter(X, y, color=color, alpha=0.6, label=label)
         ax.plot(X, y_pred, color=color)
 
         equation_lines.append(f"Block {i + 1}: y = {slope:.3f}x + {intercept:.3f}, R² = {r2:.3f}")
-        block_results.append({"block": i + 1, "slope": slope, "intercept": intercept, "r2": r2})
+
+        block_results.append(
+            {
+                "block": i + 1,
+                "slope": slope,
+                "slope_se": slope_se,
+                "intercept": intercept,
+                "r2": r2,
+                "nb_of_sessions": n,
+            }
+        )
 
     ax.text(
         0.05,
@@ -68,20 +87,22 @@ def plot_patient_regression(blocks, patient_id, feature, output_dir):
     ax.legend()
     ax.grid(True, color="0.9")
 
-    os.makedirs(output_dir, exist_ok=True)
-    fig.savefig(
-        os.path.join(output_dir, f"patient_{patient_id}_trend_for_{feature}.png"),
-        dpi=150,
-        bbox_inches="tight",
-    )
-    plt.close(fig)
+    # os.makedirs(output_dir, exist_ok=True)
+    # fig.savefig(
+    #     os.path.join(output_dir, f"patient_{patient_id}_trend_for_{feature}.png"),
+    #     dpi=150,
+    #     bbox_inches="tight",
+    # )
+    # plt.close(fig)
 
     return block_results
+
 
 def add_to_dict(ID, feature, block_results, results_dict):
     if ID not in results_dict:
         results_dict[ID] = {}
     results_dict[ID][feature] = block_results
+
 
 def save_results_to_excel(results_dict, output_path):
     rows = []
@@ -94,16 +115,19 @@ def save_results_to_excel(results_dict, output_path):
                         "Feature": feature,
                         "Block": block["block"],
                         "Slope": block["slope"],
+                        "Slope SE": block["slope_se"],
                         "Intercept": block["intercept"],
                         "R2": block["r2"],
+                        "Nb of sessions": block["nb_of_sessions"],
                     }
                 )
 
     results_df = pd.DataFrame(rows)
     results_df.to_excel(output_path, index=False)
 
+
 def plot_regressions_per_patient(
-    data, feature_list, output_dir, id_col="ID", session_col="Session(s)", patient_blocks=None
+    data, feature_list, output_dir, id_col="ID", session_col="Session(s)", nb_sessions=None, patient_blocks=None
 ):
     """
     patient_blocks: optional dict mapping a patient ID to a list of block sizes,
@@ -130,6 +154,8 @@ def plot_regressions_per_patient(
                 if len(chunk) < 2:
                     print(f"Skipping block {i + 1} for patient {patient_id} ({feature}): fewer than 2 sessions.")
                     continue
+                if nb_sessions is not None:
+                    chunk = chunk[0:nb_sessions]
                 blocks.append((chunk[session_col], chunk[feature]))
 
             if not blocks:
@@ -144,12 +170,12 @@ def plot_regressions_per_patient(
 
             add_to_dict(patient_id, feature, block_results, results_dict)
 
-    save_results_to_excel(results_dict, os.path.join(output_dir, "patient_trends_summary.xlsx"))
+    save_results_to_excel(results_dict, os.path.join(output_dir, f"patient_trends_summary_{nb_sessions}.xlsx"))
 
 
 if __name__ == "__main__":
     data = pd.read_excel(
-        
+        "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/lokomat_reports/all_reports.xlsx"
     )
 
     feature_list = ["Vitesse_kmh_MOY", "BWS_%_MOY", "Guidage_G_%_MOY", "Guidage_D_%_MOY"]
@@ -159,7 +185,16 @@ if __name__ == "__main__":
     # e.g. before/after a change in protocol. Sizes are consecutive and in
     # session order; any leftover sessions form a final block automatically.
     patient_blocks = {
-    
+        5750370: [19, 20],
+        20047255: [20, 19],
+        24190250: [16, 18],
+        25801189: [17, 20],
+        27522095: [20, 8, 19, 20, 22, 8],
+        28373638: [5, 13, 5, 4, 6],
+        30312319: [3, 13, 24, 17],
+        30528453: [21, 19],
+        31022187: [20, 20],
+        32548837: [21, 20],
     }
 
-    plot_regressions_per_patient(data, feature_list, output_dir, patient_blocks=patient_blocks)
+    plot_regressions_per_patient(data, feature_list, output_dir, patient_blocks=patient_blocks, nb_sessions=10)

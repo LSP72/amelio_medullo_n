@@ -62,6 +62,7 @@ import pandas as pd
 from scipy.stats import spearmanr
 
 import matplotlib
+
 matplotlib.use("Agg")  # no display needed
 import matplotlib.pyplot as plt
 
@@ -77,9 +78,9 @@ def load_iterations(path: str) -> list[dict]:
     if isinstance(obj, dict):
         # Could be a single iteration, or a dict keyed by e.g. random_state.
         if "shap_values" in obj or "model_fts_imp" in obj:
-            iters = [obj]                       # a single iteration dict
+            iters = [obj]  # a single iteration dict
         else:
-            iters = list(obj.values())          # dict of iterations
+            iters = list(obj.values())  # dict of iterations
     elif isinstance(obj, (list, tuple)):
         iters = list(obj)
     else:
@@ -94,8 +95,7 @@ def load_iterations(path: str) -> list[dict]:
 # --------------------------------------------------------------------------- #
 # Feature names (in model/column order, so they align with SHAP columns)
 # --------------------------------------------------------------------------- #
-def get_feature_names(iterations: list[dict], n_features: int,
-                      override: list[str] | None = None) -> list[str]:
+def get_feature_names(iterations: list[dict], n_features: int, override: list[str] | None = None) -> list[str]:
     """Resolve feature names in the SAME order as the SHAP value columns.
 
     Priority: explicit override -> shap.Explanation.feature_names ->
@@ -105,8 +105,8 @@ def get_feature_names(iterations: list[dict], n_features: int,
     if override is not None:
         if len(override) != n_features:
             raise ValueError(
-                f"override feature_names has {len(override)} entries, "
-                f"but SHAP has {n_features} features.")
+                f"override feature_names has {len(override)} entries, " f"but SHAP has {n_features} features."
+            )
         return list(override)
 
     for it in iterations:
@@ -147,11 +147,12 @@ def get_feature_names(iterations: list[dict], n_features: int,
                     "Feature names taken from model_fts_imp. If that dataframe "
                     "was sorted by importance, SHAP columns may be mislabelled. "
                     "Pass --feature-names or store model.feature_names_in_ to be "
-                    "safe.", stacklevel=2)
+                    "safe.",
+                    stacklevel=2,
+                )
                 return names
 
-    warnings.warn("Could not resolve feature names; using generic f0..fN.",
-                  stacklevel=2)
+    warnings.warn("Could not resolve feature names; using generic f0..fN.", stacklevel=2)
     return [f"f{i}" for i in range(n_features)]
 
 
@@ -175,7 +176,7 @@ def normalize_shap(shap_values, class_index: int = 1) -> np.ndarray:
     values = getattr(shap_values, "values", shap_values)
     values = np.asarray(values)
 
-    if values.ndim == 2:                       # (n_samples, n_features)
+    if values.ndim == 2:  # (n_samples, n_features)
         return values
     if values.ndim == 3:
         # Either (n_classes, n_samples, n_features) or
@@ -188,8 +189,7 @@ def normalize_shap(shap_values, class_index: int = 1) -> np.ndarray:
     raise ValueError(f"Unexpected SHAP ndim={values.ndim} (shape={values.shape}).")
 
 
-def shap_importance(shap_values, feature_names: list[str],
-                    class_index: int = 1) -> pd.Series:
+def shap_importance(shap_values, feature_names: list[str], class_index: int = 1) -> pd.Series:
     """Global SHAP importance = mean(|SHAP|) over samples, per feature."""
     if isinstance(shap_values, list):
         # old TreeExplainer: list per class
@@ -199,8 +199,7 @@ def shap_importance(shap_values, feature_names: list[str],
         arr = normalize_shap(shap_values, class_index)
     imp = np.abs(arr).mean(axis=0)
     if imp.shape[0] != len(feature_names):
-        raise ValueError(
-            f"SHAP has {imp.shape[0]} features but {len(feature_names)} names.")
+        raise ValueError(f"SHAP has {imp.shape[0]} features but {len(feature_names)} names.")
     return pd.Series(imp, index=feature_names)
 
 
@@ -210,8 +209,7 @@ def model_importance(fi: pd.DataFrame, feature_names: list[str]) -> pd.Series:
         raise TypeError("model_fts_imp is not a DataFrame.")
     imp_col = None
     for c in fi.columns:
-        if str(c).lower() in ("importance", "imp", "gain", "weight",
-                              "value", "score", "mean_abs_shap", "shap"):
+        if str(c).lower() in ("importance", "imp", "gain", "weight", "value", "score", "mean_abs_shap", "shap"):
             imp_col = c
             break
     if imp_col is None:
@@ -225,8 +223,7 @@ def model_importance(fi: pd.DataFrame, feature_names: list[str]) -> pd.Series:
     return s.reindex(feature_names)
 
 
-def iteration_importance(it: dict, feature_names: list[str], rank_source: str,
-                         class_index: int) -> pd.Series:
+def iteration_importance(it: dict, feature_names: list[str], rank_source: str, class_index: int) -> pd.Series:
     if rank_source == "shap":
         return shap_importance(it["shap_values"], feature_names, class_index)
     if rank_source == "model":
@@ -279,17 +276,17 @@ def per_feature_stats(rank_df: pd.DataFrame, top_k: int) -> pd.DataFrame:
 
 def kendalls_w(rank_df: pd.DataFrame) -> float:
     """Coefficient of concordance across iterations (0 = none, 1 = perfect)."""
-    m, n = rank_df.shape                       # m judges (iters), n items
-    R = rank_df.sum(axis=0).to_numpy()         # summed rank per feature
+    m, n = rank_df.shape  # m judges (iters), n items
+    R = rank_df.sum(axis=0).to_numpy()  # summed rank per feature
     S = ((R - R.mean()) ** 2).sum()
-    denom = (m ** 2) * (n ** 3 - n)
+    denom = (m**2) * (n**3 - n)
     return float(12 * S / denom) if denom else float("nan")
 
 
 def mean_pairwise_spearman(rank_df: pd.DataFrame, max_pairs: int = 5000) -> float:
     idx = list(range(len(rank_df)))
     pairs = list(itertools.combinations(idx, 2))
-    if len(pairs) > max_pairs:                 # subsample for very large N
+    if len(pairs) > max_pairs:  # subsample for very large N
         rng = np.random.default_rng(0)
         pairs = [pairs[i] for i in rng.choice(len(pairs), max_pairs, replace=False)]
     vals = [spearmanr(rank_df.iloc[a], rank_df.iloc[b]).statistic for a, b in pairs]
@@ -310,8 +307,7 @@ def topk_set_stability(rank_df: pd.DataFrame, k: int) -> dict:
     if len(pairs) > 5000:
         rng = np.random.default_rng(0)
         pairs = [pairs[i] for i in rng.choice(len(pairs), 5000, replace=False)]
-    jac = [len(topsets[a] & topsets[b]) / len(topsets[a] | topsets[b])
-           for a, b in pairs]
+    jac = [len(topsets[a] & topsets[b]) / len(topsets[a] | topsets[b]) for a, b in pairs]
     return {
         "k": k,
         "mean_jaccard": float(np.mean(jac)),
@@ -346,11 +342,10 @@ def plot_rank_boxplot(rank_df: pd.DataFrame, path: str, top_n: int | None = None
     data = [rank_df[f].to_numpy() for f in order]
     height = max(4, 0.32 * len(order))
     fig, ax = plt.subplots(figsize=(9, height))
-    ax.boxplot(data, vert=False, showfliers=False,
-               medianprops=dict(color="#c0392b"))
+    ax.boxplot(data, vert=False, showfliers=False, medianprops=dict(color="#c0392b"))
     ax.set_yticks(range(1, len(order) + 1))
     ax.set_yticklabels(order, fontsize=8)
-    ax.invert_yaxis()                          # most important feature on top
+    ax.invert_yaxis()  # most important feature on top
     ax.set_xlabel("Rank across iterations (1 = most important)")
     ax.set_title("SHAP feature-rank variability")
     ax.grid(axis="x", alpha=0.3)
@@ -361,8 +356,7 @@ def plot_rank_boxplot(rank_df: pd.DataFrame, path: str, top_n: int | None = None
 
 def plot_rank_heatmap(freq: pd.DataFrame, path: str, top_n: int | None = None):
     f = freq.iloc[:top_n] if top_n else freq
-    fig, ax = plt.subplots(figsize=(min(12, 0.5 * f.shape[1] + 3),
-                                    max(4, 0.32 * f.shape[0])))
+    fig, ax = plt.subplots(figsize=(min(12, 0.5 * f.shape[1] + 3), max(4, 0.32 * f.shape[0])))
     im = ax.imshow(f.to_numpy(), aspect="auto", cmap="viridis")
     ax.set_xticks(range(f.shape[1]))
     ax.set_xticklabels(f.columns, fontsize=7)
@@ -379,18 +373,24 @@ def plot_rank_heatmap(freq: pd.DataFrame, path: str, top_n: int | None = None):
 # --------------------------------------------------------------------------- #
 # Main
 # --------------------------------------------------------------------------- #
-def analyse(path: str, rank_source: str = "shap", class_index: int = 1,
-            top_k: int = 10, feature_names: list[str] | None = None,
-            out_dir: str = "rank_stability_out") -> dict:
+def analyse(
+    path: str,
+    rank_source: str = "shap",
+    class_index: int = 1,
+    top_k: int = 10,
+    feature_names: list[str] | None = None,
+    out_dir: str = "rank_stability_out",
+) -> dict:
     os.makedirs(out_dir, exist_ok=True)
     iterations = load_iterations(path)
     print(f"Loaded {len(iterations)} iterations from {path}")
 
     # infer n_features from a SHAP array
-    probe = normalize_shap(iterations[0]["shap_values"], class_index) \
-        if not isinstance(iterations[0]["shap_values"], list) \
-        else np.asarray(iterations[0]["shap_values"][min(class_index,
-              len(iterations[0]["shap_values"]) - 1)])
+    probe = (
+        normalize_shap(iterations[0]["shap_values"], class_index)
+        if not isinstance(iterations[0]["shap_values"], list)
+        else np.asarray(iterations[0]["shap_values"][min(class_index, len(iterations[0]["shap_values"]) - 1)])
+    )
     n_features = probe.shape[1]
     names = get_feature_names(iterations, n_features, feature_names)
 
@@ -412,34 +412,48 @@ def analyse(path: str, rank_source: str = "shap", class_index: int = 1,
     print(f"  Kendall's W            : {W:.3f}  (0 = no agreement, 1 = perfect)")
     print(f"  mean pairwise Spearman : {rho:.3f}")
     print(f"  top-{top_k} set mean Jaccard : {topk['mean_jaccard']:.3f}")
-    print(f"  features always in top-{top_k}: {topk['n_features_always_in_topk']}"
-          f" / ever in top-{top_k}: {topk['n_features_ever_in_topk']}")
+    print(
+        f"  features always in top-{top_k}: {topk['n_features_always_in_topk']}"
+        f" / ever in top-{top_k}: {topk['n_features_ever_in_topk']}"
+    )
     print(f"\nMost stable features (low SD of rank):")
-    print(stats[["median_rank", "sd_rank", "p_at_modal_rank",
-                 f"p_in_top_{top_k}"]].head(min(10, len(stats))).round(3)
-          .to_string())
+    print(
+        stats[["median_rank", "sd_rank", "p_at_modal_rank", f"p_in_top_{top_k}"]]
+        .head(min(10, len(stats)))
+        .round(3)
+        .to_string()
+    )
     print(f"\nWritten to: {out_dir}/")
 
-    return {"rank_df": rank_df, "importance_df": imp_df, "stats": stats,
-            "kendalls_w": W, "mean_spearman": rho, "topk": topk,
-            "rank_frequency": freq, "feature_names": names}
+    return {
+        "rank_df": rank_df,
+        "importance_df": imp_df,
+        "stats": stats,
+        "kendalls_w": W,
+        "mean_spearman": rho,
+        "topk": topk,
+        "rank_frequency": freq,
+        "feature_names": names,
+    }
 
 
 def _parse_args(argv=None):
     p = argparse.ArgumentParser(description="SHAP feature-rank stability analysis.")
     p.add_argument("pickle", help="Path to the .pck results file.")
-    p.add_argument("--rank-source", choices=["shap", "model"], default="shap",
-                   help="Rank by mean|SHAP| (default) or by model_fts_imp.")
-    p.add_argument("--class-index", type=int, default=1,
-                   help="Class to use if SHAP is per-class (binary: 1).")
-    p.add_argument("--top-k", type=int, default=10,
-                   help="k for top-k stability summaries.")
+    p.add_argument(
+        "--rank-source",
+        choices=["shap", "model"],
+        default="shap",
+        help="Rank by mean|SHAP| (default) or by model_fts_imp.",
+    )
+    p.add_argument("--class-index", type=int, default=1, help="Class to use if SHAP is per-class (binary: 1).")
+    p.add_argument("--top-k", type=int, default=10, help="k for top-k stability summaries.")
     p.add_argument("--out-dir", default="rank_stability_out")
     return p.parse_args(argv)
 
 
 if __name__ == "__main__":
     args = _parse_args()
-    analyse(args.pickle, rank_source=args.rank_source,
-            class_index=args.class_index, top_k=args.top_k,
-            out_dir=args.out_dir)
+    analyse(
+        args.pickle, rank_source=args.rank_source, class_index=args.class_index, top_k=args.top_k, out_dir=args.out_dir
+    )
