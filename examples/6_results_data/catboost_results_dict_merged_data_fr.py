@@ -58,7 +58,7 @@ data["Neurol_cond"] = data["Neurol_cond"].replace(["BM", "AVC", "Autre"], [1, 2,
 data["Sex"] = data["Sex"].replace(["M", "F"], [1, 2])
 data = data.apply(DataCleaning.lesion_level_to_num, axis=1)
 
-dict_path_3 = "results/catboost_results/profile_data/monte_carlo/catboost_results_all_by_combi.pkl"
+dict_path_3 = "results/catboost_results/profile_data//monte_carlo/catboost_results_separated_sessions_w_four_best.pkl_selected_features_by_combi.pkl"
 name = Path(dict_path_3).stem
 print("- " * 10)
 print(f"Name of tries: {name}")
@@ -235,7 +235,7 @@ if "Sex" in X_test_mean.columns.to_list():
     feature_name_dict = dict(zip(feature_data["features"], feature_data["features_names"]))
     features_names_copy = [feature_name_dict.get(feature, feature) for feature in X_test_mean_copy.columns.to_list()]
 
-    # # Create SHAP Explanation object from your averaged SHAP values
+    # Create SHAP Explanation object from your averaged SHAP values
     shap_exp = shap.Explanation(
         values=mean_shap_per_patient_copy.values, data=X_test_mean_copy.values, feature_names=features_names_copy
     )

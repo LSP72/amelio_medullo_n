@@ -19,12 +19,14 @@ share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.local.json
 
 # Others
 *.DS_Store
 *.toml
 *.csv
 *.xlsx
+*.xls
 *.png
 *.svg
 *.html

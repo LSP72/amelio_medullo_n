@@ -35,8 +35,9 @@ def collect_ids(list_of_files, names_file_path):
 def combine_reports(dict_of_files):
     dfs = []
     for ID, data in dict_of_files.items():
-        data["ID"] = ID
-        dfs.append(data)
+        merged_date_data = ProcessDataLokomat.merge_same_day(data)
+        merged_date_data["ID"] = ID
+        dfs.append(merged_date_data)
     combined = pd.concat(dfs, axis=0, ignore_index=True)
     return combined
 
@@ -58,12 +59,12 @@ def main(names_file_path, reports_folder_path=None):
 
 
 if __name__ == "__main__":
-    reports_folder_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/LOKOMAT/Reports/"
-    names_file_path = "/Users/mathildetardif/Documents/Documents/PhD/Nantes/autres/names_ipp.xlsx"
+    reports_folder_path = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/lokomat_reports/Reports"
+    names_file_path = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/others/names_ipp.xlsx"
     main(names_file_path, reports_folder_path)
 
 
-# # Now you can groupby that column
+# # Now, can groupby by column
 # grouped = combined.groupby("source_file").sum()  # or .mean(), .count(), etc.
 
 # combined.to_excel("combined.xlsx", index=False)

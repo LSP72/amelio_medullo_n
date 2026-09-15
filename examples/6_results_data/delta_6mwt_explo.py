@@ -53,9 +53,9 @@ def main(data_path, conds, eng_conds):
 
     # 2. Stats of endurance for each category
     categories = [
-        ("responders", "repondants"),
-        ("nonresponders_improved", "non-repondants ameliores"),
-        ("all_improved", "tous ameliores"),
+        ("responders", "répondants"),
+        ("nonresponders_improved", "non-répondants améliorés"),
+        ("all_improved", "tous améliorés"),
     ]
 
     for cat_key, cat_label in categories:

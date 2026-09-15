@@ -140,6 +140,6 @@ if __name__ == "__main__":
     ]
     cat_cols = ["Sex", "functional_level", "Neurol_cond", "Lesion_num", "MCID_classes"]
 
-    data_path = "/Volumes/SP UFD U2/PhD/Stage Nantes/data/datasets/final/merged_data_final.xlsx"
+    data_path = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/merged_data_final.xlsx"
     output_path = "results/stats"
     main(data_path, cont_cols, cat_cols, output_path)
