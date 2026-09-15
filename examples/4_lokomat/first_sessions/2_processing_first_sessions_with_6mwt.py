@@ -4,8 +4,10 @@ from amelio_medullo import Calculus
 
 """
     This script merges the Lokomat data with the main patient data and calculated MCID values.
-    The Lokomat data is a dataframe containing the results of the linear regressions over the first
-    n sessions of Lokomat training for each patient.
+        The Lokomat data is a dataframe containing the results of the linear regressions over the first
+        n sessions of Lokomat training for each patient.
+        All patients are considered, so those who had not both pre and post 6MWT are also included in the
+        final dataframe, but they will have no value in the MCID classes column.
 """
 
 
@@ -49,7 +51,7 @@ def main(loko_path, data_path, other_mcid_threshold, output_path=None):
     loko_data = load_data(loko_path)
     data = load_data(data_path)
 
-    loko_data_adjusted = adjust_ipp_multiple_patients(data, loko_data)
+    loko_data_adjusted = adjust_ipp_multiple_patients(loko_data)
 
     mcids = Calculus.calculate_MCID_2(data, default_threshold=other_mcid_threshold)
 
@@ -65,7 +67,7 @@ def main(loko_path, data_path, other_mcid_threshold, output_path=None):
 # %% ===== MAIN =====
 
 if __name__ == "__main__":
-    loko_path = "results/loko_results/fits_over_first_8_sessions_2026-09-04_18-16-33.xlsx"
+    loko_path = "results/loko_results/fits_over_first_8_sessions_2026-09-15_16-00-40.xlsx"
     data_path = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/data_from_dpi/id_patients_with_classifications_2026-09-01_17-47-04.xlsx"
     output_path = "results/complete_data_with_mcids_8_sessions.xlsx"
 
