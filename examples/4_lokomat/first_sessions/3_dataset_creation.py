@@ -27,6 +27,10 @@ def put_regression_info_in_line(data):
             "Vitesse_slope_SE": subdf.loc[data["Feature"] == "Vitesse_kmh_MOY", "Slope SE"].astype(float).values[0],
             "BWS_slope": subdf.loc[data["Feature"] == "BWS_%_MOY", "Slope"].astype(float).values[0],
             "BWS_slope_SE": subdf.loc[data["Feature"] == "BWS_%_MOY", "Slope SE"].astype(float).values[0],
+            "Guidage_slope": subdf.loc[data["Feature"] == "Guidage_%_MOY", "Slope"].astype(float).values[0],
+            "Guidage_slope_SE": subdf.loc[data["Feature"] == "Guidage_%_MOY", "Slope SE"].astype(float).values[0],
+            "MCID_classes": subdf.iloc[0]["MCID_classes"]  # Assuming MCID_classes is the same for all rows of the same ID
+            #TODO: add the info about the other params (age, neurol cond, etc.) if present in data
         }
     df = pd.DataFrame.from_dict(df, orient="index")
     print(df)
@@ -58,6 +62,7 @@ def main(data_path, all_reports_data_path, nb_sessions, variable_list=["Vitesse_
 
     merged_data.to_excel(f"results/loko_results/fits_over_first_{nb_sessions}_sessions_with_3rd_session.xlsx", index=True)
     print(merged_data.to_markdown())
+    print(f"Saved merged data to results/loko_results/fits_over_first_{nb_sessions}_sessions_with_3rd_session.xlsx")
 
 if __name__ == "__main__":
     nb_sessions = 8
