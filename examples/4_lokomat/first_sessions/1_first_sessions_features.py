@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
+import datetime
 
 """
     This script processes the Lokomat data to perform linear regression analyses on specified features
@@ -87,13 +88,18 @@ def save_results_to_excel(results_dict, output_path):
 
     results_df = pd.DataFrame(rows)
     results_df.to_excel(output_path, index=False)
+    print(f"Results saved to {output_path}")
 
 #%% ===== Main function =====
 def main(data_path, feature_list, output_dir, id_col='ID', patient_blocks=None, nb_sessions=None):
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
     all_reports = loading_data(data_path)
 
     patient_blocks = patient_blocks or {}
     results_dict = {}
+    all_reports["Guidage_%_MOY"] = all_reports[["Guidage_G_%_MOY", "Guidage_D_%_MOY"]].mean(axis=1)
+
     for feature in feature_list:
         for patient_id, subreport in all_reports.groupby(id_col):
             subreport_sorted = subreport[["Session(s)", feature]].dropna().sort_values("Session(s)")
@@ -121,7 +127,7 @@ def main(data_path, feature_list, output_dir, id_col='ID', patient_blocks=None, 
 
             _add_to_dict(patient_id, feature, block_results, results_dict)
 
-    save_results_to_excel(results_dict, os.path.join(output_dir, f"fits_over_first_{nb_sessions}_sessions.xlsx"))
+    save_results_to_excel(results_dict, os.path.join(output_dir, f"fits_over_first_{nb_sessions}_sessions_{timestamp}.xlsx"))
 
 
 #%% ===== MAIN =====
@@ -129,7 +135,8 @@ def main(data_path, feature_list, output_dir, id_col='ID', patient_blocks=None, 
 if __name__ == "__main__":
     data_path = "/Users/mathildetardif/Library/CloudStorage/OneDrive-UniversitedeMontreal/Mathilde Tardif - PhD - Biomarkers CP/PhD projects/Training responders/CHUNantes collaboration/donnees/lokomat_reports/all_reports.xlsx"
 
-    feature_list = ["Vitesse_kmh_MOY", "BWS_%_MOY", "Guidage_G_%_MOY", "Guidage_D_%_MOY"]
+    # feature_list = ["Vitesse_kmh_MOY", "BWS_%_MOY", "Guidage_G_%_MOY", "Guidage_D_%_MOY"]
+    feature_list = ["Vitesse_kmh_MOY", "BWS_%_MOY", "Guidage_%_MOY"]
     output_dir = "results/loko_results/"
 
     # Patients whose sessions should be split into separate regression blocks,
@@ -148,5 +155,5 @@ if __name__ == "__main__":
         32548837: [21, 20]
     }
     
-    main(data_path, feature_list, output_dir, patient_blocks=patient_blocks, nb_sessions=5)
+    main(data_path, feature_list, output_dir, patient_blocks=patient_blocks, nb_sessions=8)
 
